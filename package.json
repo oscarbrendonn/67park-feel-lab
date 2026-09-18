@@ -1,0 +1,14 @@
+{
+ "name":"67park-feel-lab-foundation",
+ "private":true,
+ "type":"module",
+ "scripts":{
+  "test":"node --import ./qa/register-three.mjs --test qa/foundation-safety.test.mjs qa/chat-safety.test.mjs qa/housing-loader.test.mjs qa/render-health.test.mjs qa/player-basics.test.mjs",
+  "test:browser":"node qa/foundation-browser.cjs",
+  "qa:serve":"node qa/regression-server.mjs",
+  "start":"node server/create-server.mjs"
+ },
+ "dependencies":{"ws":"8.21.3"},
+ "devDependencies":{"playwright":"1.63.0"},
+ "engines":{"node":">=22"}
+}

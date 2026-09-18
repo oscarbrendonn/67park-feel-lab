@@ -2,8 +2,8 @@ import {HOUSES,houseById,nearDoor,isHousingZone} from './housing-layout.js?v=hom
 import {createHousingLoader} from './housing-loader.js?v=home-entry-3';
 import {createHousingMarkers} from './housing-markers.js?v=home-scene-1';
 import {createHousingScene,ISOLATED_HOME} from './housing-scene.js?v=home-scene-1';
-import {g as input,k as controls,Aa as wardrobe,i as board} from './chunk-G7D6MVRW.js?v=mobile-29';
-import {b as overview} from './chunk-OZ77422N.js?v=home-social-3';
+import {g as input,k as controls,Aa as wardrobe,i as board} from './chunk-G7D6MVRW.js?v=foundation-safety-1';
+import {b as overview} from './chunk-OZ77422N.js?v=foundation-safety-1';
 import {HOME_SPOTS,homeSpot,spotPosition,nearHomeSpot} from './housing-actions.js?v=home-social-3';
 import {queueHomePose} from './housing-poses.js?v=home-social-3';
 
@@ -34,7 +34,7 @@ export function createHousing({sound=()=>{}}={}){
  function say(text){message.textContent=text;}
  function releaseControls(){window.dispatchEvent(new Event('park:release-controls'));input.x=input.z=0;input.jumpQueued=false;}
  function close(){if(!panel.open)return;panel.close();controls.blocked=beforeBlocked||!!wardrobe.open||!!document.querySelector('dialog[open]');releaseControls();button.focus({preventScroll:true});}
- function open(){if(panel.open)return;releaseId='';beforeBlocked=controls.blocked;controls.blocked=true;releaseControls();render();panel.showModal();panel.querySelector('.home-close').focus({preventScroll:true});if(!model)send('sync');}
+ function open(){if(failed){failed=false;world=null;pending=preparing=travel=mapTravel=null;lastIsland='';button.textContent='⌂ Homes';say('Homes are reconnecting. Try the door again in a moment.');return;}if(panel.open)return;releaseId='';beforeBlocked=controls.blocked;controls.blocked=true;releaseControls();render();panel.showModal();panel.querySelector('.home-close').focus({preventScroll:true});if(!model)send('sync');}
  const state=h=>model?.houses.find(q=>q.id===h.id);
  function render(){
   const connected=online()?.data.connected&&!!model&&model.island===online()?.data.island?.code;
@@ -189,7 +189,7 @@ export function createHousing({sound=()=>{}}={}){
   if(panel.open)render();
  }
  return {
-  step(body,input,dt,map){if(failed)return;try{tick(body,map);}catch(e){failed=true;close();if(visit){const h=houseById(visit);online()?.send({t:'house.exit'});if(h&&body){body.setTranslation({x:h.door[0],y:h.door[1],z:h.door[2]},true);body.setLinvel({x:0,y:0,z:0},true);}}button.hidden=hint.hidden=true;partition?.dispose();loader?.dispose();markers?.dispose();console.error('[housing]',e);}},
+  step(body,input,dt,map){if(failed)return;try{tick(body,map);}catch(e){failed=true;close();if(visit){const h=houseById(visit);exitWhenConnected=true;try{online()?.send({t:'house.exit'});}catch{}if(h&&body){body.setTranslation({x:h.door[0],y:h.door[1],z:h.door[2]},true);body.setLinvel({x:0,y:0,z:0},true);}}releaseControls();hint.hidden=true;button.hidden=false;button.textContent='Retry homes';ws?.removeEventListener('message',received);ws=null;for(const resource of [partition,loader,markers])try{resource?.dispose();}catch{}partition=loader=markers=null;visit=rest=preparing=pending=null;console.error('[housing]',e);}},
   interact,open,travelFromMap,isResting:()=>!!rest&&!failed,
   isPlayerResting:id=>!!model?.poses?.some(p=>p.id===id),
   visual(root,dt){queueHomePose(root,homeSpot(!failed&&rest),houseById(!failed&&visit),dt);},

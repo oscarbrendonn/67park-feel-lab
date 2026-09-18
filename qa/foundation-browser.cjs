@@ -1,0 +1,79 @@
+const {chromium}=require('playwright');
+const WebSocket=require('ws');
+const assert=require('node:assert/strict');
+const {spawn}=require('node:child_process');
+const fs=require('node:fs');
+const port=Number(process.env.PARK_QA_PORT||8499),origin='http://127.0.0.1:'+port,base=origin+'/67park-feel-lab/';
+const soakMs=Number(process.env.PARK_SOAK_MS||120000);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let server,browser;
+async function start(){
+ server=spawn(process.execPath,['qa/regression-server.mjs'],{stdio:['ignore','pipe','inherit'],env:process.env});
+ await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('QA server start timed out')),60000);server.stdout.on('data',b=>{process.stdout.write(b);if(String(b).includes('REGRESSION_READY')){clearTimeout(timer);resolve();}});server.once('exit',c=>{clearTimeout(timer);reject(Error('QA server exited '+c));});});
+ const mac='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+ browser=await chromium.launch({headless:true,...(process.env.PARK_CHROME?{executablePath:process.env.PARK_CHROME}:process.platform==='darwin'&&fs.existsSync(mac)?{executablePath:mac}:{})});
+}
+async function peer(){
+ const guest=await(await fetch(origin+'/kimi/api/session',{headers:{Origin:origin}})).json(),messages=[],sockets=[];
+ for(const channel of ['ws','online']){const ws=new WebSocket(origin.replace('http','ws')+'/kimi/'+channel,['67park-v1','guest.'+guest.token],{headers:{Origin:origin}});ws.on('message',b=>messages.push(JSON.parse(b)));sockets.push(ws);await new Promise((r,j)=>{ws.once('open',r);ws.once('error',j)});ws.send(JSON.stringify({t:'hello',name:'Safety QA friend'}));}
+ return {...guest,messages,sockets,chat(text,nonce){sockets[0].send(JSON.stringify({t:'chat',text,nonce}));},close(){sockets.forEach(s=>s.terminate());}};
+}
+async function run(mobile){
+ const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1280,height:900},isMobile:mobile,hasTouch:mobile});
+ const page=await context.newPage(),errors=[];let friend;
+ page.on('pageerror',e=>errors.push(String(e.stack)));
+ page.on('response',r=>{if(r.url().includes('/kimi/')&&r.status()>=400)console.log('NETWORK_FAIL',r.status(),new URL(r.url()).pathname);});
+ await page.addInitScript(()=>{
+  localStorage.setItem('67park-feel-lab.character.v3',JSON.stringify({base:'goril'}));localStorage.setItem('67park-feel-lab.player-profile.v1',JSON.stringify({version:1,base:'goril'}));localStorage.setItem('67park-feel-lab-muted','1');
+  window.__gate={frames:0,last:0,maxGap:0,losses:0};const tick=t=>{if(__gate.last)__gate.maxGap=Math.max(__gate.maxGap,t-__gate.last);__gate.last=t;__gate.frames++;requestAnimationFrame(tick)};requestAnimationFrame(tick);document.addEventListener('webglcontextlost',()=>__gate.losses++,true);
+ });
+ try{
+  // A failed map download must leave a retry route, never an endless welcome.
+  let failed=0;await page.route('**/island/ada_calisma.glb*',r=>{failed++;return r.fulfill({status:503,body:'Intentional isolated QA failure'});});
+  await page.goto(base+'?claudeQA=passive',{waitUntil:'domcontentloaded',timeout:120000});
+  await page.locator('[data-return-entry=error]').waitFor({timeout:60000});assert(failed>0);assert.equal(await page.locator('#party-settings-btn').isVisible(),false);
+  console.log('PASS failed asset offers retry',mobile);
+  await page.unroute('**/island/ada_calisma.glb*');await page.getByRole('button',{name:'Retry loading',exact:true}).click();
+  await page.waitForFunction(()=>window.__islandWorld?.ready&&window.__eggyNet?.connected&&window.__candyOnline?.data.connected&&window.__parkHousing?.debug().model&&!document.querySelector('.wardrobe'),null,{timeout:60000});
+  console.log('PASS asset retry',mobile);errors.length=0;
+  const read=()=>page.evaluate(()=>({frame:__islandWorld.renderer.info.render.frame,gap:__gate.maxGap,losses:__gate.losses,party:__party.status(),home:__parkHousing.debug(),id:__candyOnline.data.me.id,connected:__eggyNet.connected&&__candyOnline.data.connected,programs:__islandWorld.renderer.info.programs?.length}));
+  async function check(name,action){await page.evaluate(()=>{__gate.maxGap=0});const before=await read();await action();await page.waitForTimeout(600);const after=await read();assert(after.frame-before.frame>=4,name+' renderer stopped');assert(after.gap<2500,name+' frame stall '+after.gap);assert.equal(after.losses,0);assert.equal(after.party.disabled,false);assert.equal(after.home.failed,false);assert.deepEqual(errors,[]);console.log('PASS',mobile,name,JSON.stringify({frames:after.frame-before.frame,maxGap:Math.round(after.gap),programs:after.programs}));}
+  friend=await peer();await page.waitForFunction(id=>__candyOnline.data.island.players.some(p=>p.id===id),friend.id);
+  await check('chat composer 12 messages and 1000 repeated submit attempts',async()=>{
+   for(let i=0;i<12;i++){await page.locator('.park-chat button').last().click();await page.getByPlaceholder('Message everyone…').fill('QA message '+i);await page.locator('.park-chat button').last().click();await page.waitForTimeout(850);}
+   await page.evaluate(async()=>{const {submitParkChat}=await import('./app/chat-submit.js?v=foundation-safety-1');for(let i=0;i<1000;i++)submitParkChat(__eggyNet,'Repeated input',()=>{});});
+  });
+  await page.locator('#party-settings-btn').click();await page.getByText('Players · mute & block',{exact:true}).click();
+  await page.locator(`[data-safety=muted][data-player="${friend.id}"]`).click();
+  await page.waitForFunction(id=>JSON.parse(localStorage.getItem('67park.feel-lab.safety.v1')).muted.includes(id),friend.id);
+  friend.chat('Muted friend message','muted');await sleep(900);assert.equal(await page.evaluate(id=>__eggyNet.chat.some(m=>m.id===id&&m.text==='Muted friend message'),friend.id),false);
+  await page.locator(`[data-safety=blocked][data-player="${friend.id}"]`).click();
+  await page.waitForFunction(id=>JSON.parse(localStorage.getItem('67park.feel-lab.safety.v1')).blocked.includes(id),friend.id);
+  await page.screenshot({path:'.qa-results/safety-'+(mobile?'mobile':'desktop')+'.png'});
+  await page.getByRole('button',{name:'Close settings',exact:true}).click();
+  const before=await read();await check('reconnect retains identity and safety while peer stays connected',async()=>{
+   await page.evaluate(()=>{__eggyNet.ws.close();__candyOnline.ws.close();});
+   await page.waitForFunction(()=>__eggyNet.connected&&__candyOnline.data.connected,null,{timeout:30000});await page.waitForTimeout(1000);assert.equal((await read()).id,before.id);assert(friend.sockets.every(s=>s.readyState===1));
+  });
+  const house=mobile?'H04':'H03';
+  const send=action=>page.evaluate(({action,house})=>__candyOnline.send({t:'house.'+action,house}),{action,house});
+  await send('claim');await page.waitForFunction(h=>__parkHousing.debug().model.houses.find(q=>q.id===h).owner===__candyOnline.data.me.id,house);
+  await send('door');await page.waitForTimeout(900);
+  await check('100 home transitions',async()=>{
+   for(let i=0;i<50;i++){await send('enter');await page.waitForFunction(h=>__parkHousing.debug().visit===h,house);await page.waitForTimeout(430);await send('exit');await page.waitForFunction(()=>!__parkHousing.debug().visit);await page.waitForTimeout(430);}
+  });
+  await check('1000 punch and interact events',()=>page.evaluate(()=>{for(let i=0;i<1000;i++){document.querySelector('#preview-hit')?.click();dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE',bubbles:true}));dispatchEvent(new KeyboardEvent('keyup',{code:'KeyE',bubbles:true}));}}));
+  await check('20 outfit changes and return from studio',async()=>{
+   await page.getByRole('button',{name:'Profile studio',exact:true}).click();
+   await page.getByRole('dialog',{name:'Style Studio',exact:true}).waitFor();
+   for(let i=0;i<20;i++)await page.getByRole('button',{name:'Next shoes',exact:true}).click();
+   await page.getByRole('button',{name:'Enter the park',exact:true}).click();
+   await page.waitForFunction(()=>!document.querySelector('.wardrobe')&&document.documentElement.dataset.gameplayAvatarState==='ready',null,{timeout:60000});
+  });
+  await check('one broken optional feature does not stop homes, controls or rendering',()=>page.evaluate(()=>{__parkPets.step=()=>{throw Error('QA injected optional feature')};}));
+  assert((await read()).party.faults.some(f=>f.key==='pets-step'));
+  if(mobile){const end=Date.now()+soakMs;let i=0;while(Date.now()<end){await check('mobile soak '+ ++i,async()=>{await page.keyboard.down('KeyW');await page.waitForTimeout(200);await page.keyboard.up('KeyW');await page.waitForTimeout(Math.min(10000,Math.max(0,end-Date.now())));});assert(friend.sockets.every(s=>s.readyState===1));}}
+  await send('release');console.log('FOUNDATION_BROWSER_PASS',JSON.stringify({mobile,soakMs:mobile?soakMs:0,errors:errors.length,peerStillConnected:friend.sockets.every(s=>s.readyState===1)}));
+ }catch(e){await page.screenshot({path:'.qa-results/failure-'+mobile+'.png'}).catch(()=>{});console.error('BROWSER_STATE',await page.evaluate(()=>JSON.stringify({text:document.body.innerText.slice(-2500),errors:window.__candyErrors,ready:window.__islandWorld?.ready,avatar:document.documentElement.dataset.gameplayAvatarState,park:window.__eggyNet?.connected,social:window.__candyOnline?.data.connected,home:window.__parkHousing?.debug(),party:window.__party?.status()})).catch(()=>''),errors);throw e;}finally{friend?.close();await context.close();}
+}
+(async()=>{fs.mkdirSync('.qa-results',{recursive:true});await start();if(process.env.PARK_VIEW!=='mobile')await run(false);if(process.env.PARK_VIEW!=='desktop')await run(true);})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{await browser?.close();server?.kill('SIGTERM');});

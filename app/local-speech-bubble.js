@@ -2,6 +2,7 @@ import {Vector3} from 'three';
 let bubble=null,expires=0,visual=null,head=null;
 const anchor=new Vector3();
 let failed=false,nextSearch=0,lastTransform='';
+if(typeof window!=='undefined')window.addEventListener('park:chat-rejected',()=>{expires=1;failed=true;if(bubble)bubble.hidden=true;});
 const diagnostics={messages:0,updates:0,errors:0};
 const stack=[],seen=new Set();
 export function speechDiagnostics(){return {...diagnostics};}

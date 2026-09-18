@@ -1,6 +1,6 @@
 import {createParkLaunchers} from "./park-launchers.js?v=hatch-ends-1";
 import {createParkPets} from '../pets/park-pets.js?v=pets-soft-2';
-import {createHousing} from '../housing.js?v=home-social-3';
+import {createHousing} from '../housing.js?v=foundation-safety-1';
 import '../chat-send-focus.js?v=homes-1';
 import {createParkSocialToys} from "./park-social-toys.js?v=balloon-lift-2";
 import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
@@ -11,8 +11,9 @@ import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
 // Loaded after app/main.js. Config: window.__partyConfig = {runtime: "<runtime ?v>", carry: "<carry ?v>"}.
 import * as THREE from 'three';
 import {playerSettings as settings,savePlayerSettings as saveSettings} from '../player-settings.js';
-import {installPlayerSettings} from './settings-panel.js?v=foundation-basics-1';
+import {installPlayerSettings} from './settings-panel.js?v=foundation-safety-1';
 import { createPartyAudio } from './party-audio.js?v=skate-sfx-1';
+import {createFeatureBoundary} from '../feature-boundary.js';
 
 const BASE = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
 const CFG = Object.assign({runtime: '', carry: ''}, (typeof window !== 'undefined' && window.__partyConfig) || {});
@@ -24,11 +25,11 @@ const finite = v => Number.isFinite(v);
 const log = (...a) => { try { console.log('[party]', ...a); } catch {} };
 let disabled = false;
 let settingsUI = null;
-function guard(fn) {
+let guardId=0;
+const features=createFeatureBoundary({onFault:record=>{log('feature paused',record.key,record.message);try{const errors=window.__candyErrors||=[];errors.push('party '+record.key+': '+record.message);if(errors.length>32)errors.splice(0,errors.length-32);}catch{}}});
+function guard(fn,key='hook-'+(++guardId)) {
   return function (...args) {
-    if (disabled) return;
-    try { return fn.apply(this, args); }
-    catch (e) { disabled = true; log('disabled after error', e); try { (window.__candyErrors ||= []).push('party: ' + (e?.message || e)); } catch {} }
+    return features.run(key,()=>fn.apply(this,args));
   };
 }
 
@@ -72,28 +73,28 @@ let previousHeld = '';
 // ---------- hooks called by main.js ----------
 window.__partyStep = guard((body, input, dt, map) => {
   player.body = body || null; player.map = map;
-  housing.step(body,input,dt,map);
-  pets.step(body,dt,map);
+  features.run('housing-step',()=>housing.step(body,input,dt,map));
+  features.run('pets-step',()=>pets.step(body,dt,map));
   dt = clamp(finite(dt) ? dt : 0, 0, 0.05);
-  netHook.step();
-  knockStep(dt);
-  footsteps(state(), dt);
+  features.run('network',()=>netHook.step());
+  features.run('knockback',()=>knockStep(dt));
+  features.run('footsteps',()=>footsteps(state(), dt));
   const held = heldId();
   if (held && !previousHeld) sfx.play('grab');
   previousHeld = held;
-  toys.step(body,input,dt,map==='city'&&!!world()&&!world()?.homeScene?.active);
+  features.run('toys-step',()=>toys.step(body,input,dt,map==='city'&&!!world()&&!world()?.homeScene?.active));
   if (map !== 'city' || !world()) return;
-  if(world().ready&&!world().skateRailFinish)installSkateRailFinish(world());
-  items.step(body, dt);
-  stepRings(dt);
-  remotePops.step(dt);
-  botFlights.step();
+  features.run('rails',()=>{if(world().ready&&!world().skateRailFinish)installSkateRailFinish(world());});
+  features.run('launchers',()=>items.step(body,dt));
+  features.run('rings',()=>stepRings(dt));
+  features.run('remote-pops',()=>remotePops.step(dt));
+  features.run('bot-flight',()=>botFlights.step());
 });
 window.__partyVisual = guard((group, dt) => {
-  housing.visual(group,dt);
-  carryApi?.updateLocalCarryHands?.(group,dt);
-  toys.visual(group,dt);
-  if(player.map==='city') world()?.parkSwimVisual?.(group);
+  features.run('housing-visual',()=>housing.visual(group,dt));
+  features.run('carry-visual',()=>carryApi?.updateLocalCarryHands?.(group,dt));
+  features.run('toys-visual',()=>toys.visual(group,dt));
+  features.run('swim-visual',()=>{if(player.map==='city')world()?.parkSwimVisual?.(group);});
   player.visual = group || null;
   dt = clamp(finite(dt) ? dt : 0, 0, 0.05);
   const st = state();
@@ -136,16 +137,18 @@ window.__partyVisual = guard((group, dt) => {
 // Rides on the emote field of the position packet, which the server relays as a 40 char string.
 // pk1h:<victim id prefix>:<nonce>:<angle deg>:<power>
 const netHook = (() => {
-  let ws = null, outgoing = null, until = 0; const seen = new Map();
+  let ws = null, listener=null,outgoing = null, until = 0; const seen = new Map();
   const listen = () => {
     const n = net(); const sock = n?.ws; if (!sock || sock === ws) return;
+    if(ws&&listener)ws.removeEventListener('message',listener);
     ws = sock;
-    sock.addEventListener('message', ev => {
+    listener=ev => {
       if (typeof ev.data !== 'string' || ev.data.indexOf('"pk1') < 0) return;
       let m; try { m = JSON.parse(ev.data); } catch { return; }
       if (m?.t !== 's' || typeof m.e !== 'string' || !m.e.startsWith('pk1')) return;
-      if(m.e.startsWith('pk1t:'))guard(toys.receive)(m);else guard(hits.receive)(m);
-    });
+      if(m.e.startsWith('pk1t:'))features.run('toys-receive',()=>toys.receive(m));else features.run('hits-receive',()=>hits.receive(m));
+    };
+    sock.addEventListener('message',listener);
     if (!sock.__partySend) {
       sock.__partySend = true;
       const raw = sock.send.bind(sock);
@@ -172,7 +175,7 @@ const netHook = (() => {
         if (p) { n.lastSend = 0; n.sendState([+p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2)], finite(st?.heading) ? st.heading : 0); }
       } catch {}
     },
-    dedupe(key) { const now = performance.now(); for (const [k, t] of seen) if (now - t > 4000) seen.delete(k); if (seen.has(key)) return false; seen.set(key, now); return true; },
+    dedupe(key) { const now = performance.now(); for (const [k, t] of seen) if (now - t > 4000) seen.delete(k); if (seen.has(key)) return false;if(seen.size>=256)seen.delete(seen.keys().next().value); seen.set(key, now); return true; },
   };
 })();
 const shortId = id => String(id || '').replace(/-/g, '').slice(0, 8);
@@ -459,5 +462,5 @@ function installSettings(){return installPlayerSettings({sfx,isTouch})}
 try { settingsUI=installSettings(); installControls(); log('ready', VERSION, 'base', BASE, 'touch', isTouch); }
 catch (e) { disabled = true; log('install failed', e); }
 window.__party = {version: VERSION, settings, sfx, hits, netHook, botFlights, botsInFront, toys, audio: () => sfx.state(),
-  status: () => ({disabled, runtime: !!stateApi, carry: !!carryApi, spring: spring.v, map: player.map, ...items.count()}),
+  status: () => ({disabled, faults:features.snapshot(),runtime: !!stateApi, carry: !!carryApi, spring: spring.v, map: player.map, ...items.count()}),
   debug: () => { const t = player.body?.translation?.(); const st = state(); return {...items.debug(), player: t ? {x: t.x, y: t.y, z: t.z} : null, state: st ? {grounded: st.grounded, speed: st.speed, vy: st.verticalVelocity, punchT: st.punchT, shake: st.shake, enabled: st.enabled} : null, id: net()?.id || null, remotes: net()?.remotes?.size ?? null}; }};

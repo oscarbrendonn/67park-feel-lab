@@ -1,4 +1,5 @@
 import {Vector3} from 'three';
+import {hidesPlayerChat} from './social-safety.js';
 
 const entries=new Map(),anchor=new Vector3(),stack=[],seen=new Set();
 const LIMIT=16,LIFETIME=10000;
@@ -29,6 +30,7 @@ function element(id){
 // Called by the existing remote-avatar frame callback. No separate frame loop,
 // skinned-vertex bounds, recursive matrix updates, or per-message timers.
 export function updateRemoteSpeech({id,visual,camera,messages,blocked=false,now=Date.now()}){
+  blocked=blocked||hidesPlayerChat(id);
   let entry=entries.get(id);
   try{
     const message=latest(messages,id),at=Number(message?.at),text=typeof message?.text==='string'?message.text.trim().slice(0,140):'';

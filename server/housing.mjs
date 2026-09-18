@@ -6,7 +6,7 @@ import {homeSpot,spotPosition,nearHomeSpot} from '../app/housing-actions.js';
 export function installHousing(app){
  const disposers=[];
  for(const hub of app.hubs.values()){
-  const homes=new Map(),visits=new Map(),rates=new Map(),corrections=new Map(),travelUntil=new Map();
+  const homes=new Map(),visits=new Map(),rates=new Map(),corrections=new Map(),travelUntil=new Map(),receipts=new Map();
   const rests=new Map(),invites=new Map(),bells=new Map(),rosters=new Map();
   const original={message:hub.message,lobbyMessage:hub.lobbyMessage,update:hub.update,state:hub.state};
   const entries=id=>{if(!homes.has(id))homes.set(id,new Map());return homes.get(id);};
@@ -40,7 +40,7 @@ export function installHousing(app){
    for(const [pid,v]of [...visits])if(v.lobby===lobby&&v.house===id){const p=hub.players.get(pid);if(p)exit(p,'This home is now available.',false);else{visits.delete(pid);rests.delete(pid);}}
    changed(lobby);
   }
-  function validInvite(p,i){return i.expires>hub.now()&&i.lobby===p.lobbyId&&homes.get(i.lobby)?.get(i.house)?.owner===i.owner&&hub.lobbies.get(i.lobby)?.members.has(i.owner);}
+  function validInvite(p,i){return !hub.safety?.blocked(p.id,i.owner)&&i.expires>hub.now()&&i.lobby===p.lobbyId&&homes.get(i.lobby)?.get(i.house)?.owner===i.owner&&hub.lobbies.get(i.lobby)?.members.has(i.owner);}
   function stand(p,notify=true){
    const r=rests.get(p.id);if(!r)return;
    rests.delete(p.id);const h=houseById(r.house),s=homeSpot(r.spot);
@@ -58,12 +58,16 @@ export function installHousing(app){
    if(p.carryTarget||[...hub.players.values()].some(q=>q.lobbyId===p.lobbyId&&q.carryTarget===p.id))throw Error('Put your friend down before visiting a home.');
   }
   function action(p,m){
+   const req=typeof m.request==='string'?m.request.slice(0,32):'',now=hub.now();
+   let previous=receipts.get(p.id);if(!previous){previous=new Map();receipts.set(p.id,previous);}
+   for(const [key,r]of previous)if(now-r.at>30000)previous.delete(key);
+   if(req&&previous.has(req)){hub.send(p.online,previous.get(req).value);return;}
+   const result=value=>{if(req){if(previous.size>=32)previous.delete(previous.keys().next().value);previous.set(req,{at:now,value});}hub.send(p.online,value);};
    // House traffic has its own small budget; it never creates a broadcast storm.
-   const now=hub.now(),rate=rates.get(p.id)||{tokens:8,at:now};
+   const rate=rates.get(p.id)||{tokens:8,at:now};
    rate.tokens=Math.min(8,rate.tokens+(now-rate.at)/400);rate.at=now;rates.set(p.id,rate);
    const safety=(m.t==='house.stand'||m.t==='house.exit')&&rests.has(p.id);
-   if(rate.tokens<1&&!safety)return;if(!safety)rate.tokens--;
-   const req=typeof m.request==='string'?m.request.slice(0,32):'';
+   if(rate.tokens<1&&!safety){hub.send(p.online,{t:'house.result',request:typeof m.request==='string'?m.request.slice(0,32):'',ok:false,message:'Please wait a moment before another home action.'});return;}if(!safety)rate.tokens--;
    try{
     if(m.t==='house.sync'){
      const v=occupied(p);if(v&&v.lobby===p.lobbyId&&!p.roomId){const h=houseById(v.house);teleport(p,inRoom(h,...[p.lastPosition?.p?.[0],p.lastPosition?.p?.[2]])?p.lastPosition.p:roomSpawn(h),h.id);}
@@ -76,6 +80,7 @@ export function installHousing(app){
      else{
       if(!h)throw Error('Choose a home from this island.');
       const owner=rows.get(h.id);
+      if(owner&&owner.owner!==p.id&&hub.safety?.blocked(p.id,owner.owner))throw Error('This home is unavailable for visits.');
       if(m.t==='house.claim'){
        if(owner&&owner.owner!==p.id)throw Error('Someone has already claimed this home.');
        if([...rows].some(([id,q])=>id!==h.id&&q.owner===p.id))throw Error('You already have a home. Release it before choosing another.');
@@ -104,6 +109,7 @@ export function installHousing(app){
       }else if(m.t==='house.invite'){
        if(owner?.owner!==p.id)throw Error('Only the owner can invite guests.');
        const guest=hub.players.get(m.target);
+       if(hub.safety?.blocked(p.id,guest?.id))throw Error('This player is unavailable for contact.');
        if(!guest?.online||guest.id===p.id||guest.lobbyId!==p.lobbyId||guest.roomId||!hub.lobbies.get(p.lobbyId)?.members.has(guest.id))throw Error('Choose an online friend in this lobby.');
        let inbox=invites.get(guest.id);if(!inbox){inbox=new Map();invites.set(guest.id,inbox);}
        const key=p.lobbyId+':'+h.id,old=inbox.get(key);
@@ -121,8 +127,8 @@ export function installHousing(app){
       }else throw Error('Unknown home action.');
      }
     }
-    sendState(p);hub.send(p.online,{t:'house.result',request:req,ok:true});
-   }catch(e){hub.send(p.online,{t:'house.result',request:req,ok:false,message:e.message});sendState(p);}
+    sendState(p);result({t:'house.result',request:req,ok:true});
+   }catch(e){result({t:'house.result',request:req,ok:false,message:e.message});sendState(p);}
   }
   hub.message=function(p,m){
    if(typeof m.t==='string'&&m.t.startsWith('house.'))return action(p,m);
@@ -170,7 +176,7 @@ export function installHousing(app){
    for(const [id,lobby]of hub.lobbies){const key=JSON.stringify([...lobby.members].map(pid=>{const q=hub.players.get(pid);return [pid,q?.name,!!q?.online,q?.roomId];}));if(rosters.get(id)!==key){rosters.set(id,key);changed(id);}}
    for(const id of rosters.keys())if(!hub.lobbies.has(id))rosters.delete(id);
    for(const [key,at]of bells)if(now-at>10000)bells.delete(key);
-   for(const map of [rates,corrections,travelUntil])for(const id of map.keys())if(!hub.players.has(id))map.delete(id);
+   for(const map of [rates,corrections,travelUntil,receipts])for(const id of map.keys())if(!hub.players.has(id))map.delete(id);
   };
   disposers.push(()=>Object.assign(hub,original));
  }

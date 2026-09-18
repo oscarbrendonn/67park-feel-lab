@@ -21,3 +21,14 @@ test('stalled frames record bounded local house diagnostics and resume cleanly',
  renderer.info.render.frame++;check();assert.equal(panel.hidden,true);
  dispose();assert.equal(panel,null);
 });
+
+test('paused render attempts bounded recovery and context loss permits browser restoration',()=>{
+ let now=0,check,recoveries=0,prevented=false;const events=new Map();
+ const target=()=>({addEventListener:(k,f)=>events.set(k,f),removeEventListener:k=>events.delete(k)});
+ const win={...target(),localStorage:{setItem(){}},setInterval:f=>{check=f;return 1},clearInterval(){}};
+ const doc={...target(),hidden:false,body:{append(){}},createElement:()=>({style:{},dataset:{},setAttribute(){},append(){},remove(){}})};
+ const renderer={info:{render:{frame:1}},getContext:()=>({isContextLost:()=>false})};
+ const dispose=installParkRenderHealth({canvas:target(),renderer,ready:()=>true,mode:()=> 'never',recover:()=>recoveries++,win,doc,now:()=>now});
+ check();now=6000;for(let i=0;i<100;i++)check();assert.equal(recoveries,1);
+ events.get('webglcontextlost')({preventDefault(){prevented=true}});assert(prevented);assert.equal(recoveries,1);events.get('webglcontextrestored')();assert.equal(recoveries,2);dispose();
+});

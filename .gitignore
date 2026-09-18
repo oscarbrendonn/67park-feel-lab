@@ -1,0 +1,5 @@
+node_modules/
+.qa-results/
+.pages-stage/
+data/
+playwright-report/

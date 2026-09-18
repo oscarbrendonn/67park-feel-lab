@@ -1,5 +1,6 @@
 import {playerSettings as settings, setPlayerSetting, savePlayerSettings, resetPlayerSettings, settingsSaveStatus, SETTINGS_VERSION} from '../player-settings.js';
 import {BASICS_VERSION, readPlayerDiagnostics, makeBugReport} from '../player-diagnostics.js?v=foundation-basics-1';
+import {installSafetyControls} from '../social-safety.js';
 
 export function installPlayerSettings({sfx,isTouch}){
  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./settings-panel.css?v=foundation-basics-1',import.meta.url).href;document.head.append(sheet);
@@ -19,6 +20,7 @@ export function installPlayerSettings({sfx,isTouch}){
  <section><h3>Help</h3><details><summary>Show controls</summary><div class="party-hint"><strong>On a phone</strong><p>Left joystick: move. Drag an empty area on the right: camera. Use the labelled action buttons.</p><strong>Keyboard & mouse</strong><p>WASD / arrows: move · Space: jump · Shift: sprint · F: punch · E: interact / grab · T: throw · V: skate / walk · B: emotes · I: bag · Enter: chat. Drag on the game with the left or right mouse button to look around.</p><p>Mini-games show their own relevant actions. Basketball and penalties use aiming instead of free movement.</p></div></details><details><summary>Report a bug</summary><p class="party-hint">Describe the problem, then save or copy the report and send it to the 67Park team with a screenshot. Reports are not sent automatically.</p><label class="party-report-label">What happened?<textarea id="settings-report-description" maxlength="2000" rows="3" placeholder="What did you do? What happened instead?"></textarea></label><label class="party-report-label">Diagnostic details<textarea id="settings-report" readonly rows="4"></textarea></label><div class="party-help-actions"><button type="button" data-action="copy">Copy details</button><button type="button" data-action="download">Save bug report</button></div><p id="settings-report-status" role="status"></p></details><button type="button" class="party-reset" data-action="reset">Restore defaults</button><div id="settings-reset-confirm" hidden><p>Reset these settings? Your character and progress will stay unchanged.</p><button type="button" data-action="confirm-reset">Reset settings</button><button type="button" data-action="cancel-reset">Cancel</button></div></section>
  <div class="party-foot">67Park · ${BASICS_VERSION} · ${SETTINGS_VERSION}</div></div>`;
  document.body.append(gear,panel);
+ installSafetyControls([...panel.querySelectorAll('section')].find(s=>s.querySelector('h3')?.textContent==='Social'));
  const root=document.documentElement;
  let lastNames,connectionTimer=null;
  const refreshConnection=()=>{

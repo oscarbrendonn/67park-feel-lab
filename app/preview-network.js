@@ -1,4 +1,5 @@
-import {PREVIEW_BACKEND,PREVIEW_VARIANT} from './preview-network-config.js?v=qa26';
+import {PREVIEW_BACKEND,PREVIEW_VARIANT} from './preview-network-config.js?v=foundation-safety-1';
+import {protectParkSocket} from './social-safety.js';
 
 const key='67park.preview.guest.v1.'+PREVIEW_VARIANT;
 const sharedKey=Symbol.for('67park.preview.transport.v1.'+PREVIEW_VARIANT);
@@ -27,5 +28,5 @@ export async function fetchParkSession(){
 export function parkSocket(channel){
  if(!['ws','online'].includes(channel)||!state.session)throw Error('Preview session not ready.');
  const url=new URL(endpoint('/'+channel));url.protocol=url.protocol==='https:'?'wss:':'ws:';
- return new WebSocket(url,['67park-v1','guest.'+state.session.token]);
+ return protectParkSocket(new WebSocket(url,['67park-v1','guest.'+state.session.token]),channel);
 }
