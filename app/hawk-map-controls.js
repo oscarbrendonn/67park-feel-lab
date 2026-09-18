@@ -106,7 +106,8 @@ export function installHawkMapControls(camera, hawk, config, host = window) {
     lastTap=null;
     const vp=viewport(),unit=2*view.height*Math.tan(vp.fov*Math.PI/360)/vp.height;
     const x=view.x+(p.x-vp.width/2)*unit,z=view.z+(p.y-vp.height/2)*unit;
-    if(config.teleport?.(x,z)===true)hawk.set(false);
+    const homeTravel=host.__parkHousing?.travelFromMap?.(()=>config.teleport?.(x,z));
+    if(homeTravel===true||(homeTravel===undefined&&config.teleport?.(x,z)===true))hawk.set(false);
   };
   on(host,'pointerup',up);on(host,'pointercancel',()=>release());
   on(host,'lostpointercapture',e=>{pointers.delete(e.pointerId);});

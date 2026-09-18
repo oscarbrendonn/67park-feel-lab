@@ -1,9 +1,14 @@
 import {HOUSES,houseById,nearDoor,isHousingZone} from './housing-layout.js';
-import {createHousingInterior} from './housing-interior.js?v=home-stability-1';
+import {createHousingLoader} from './housing-loader.js?v=home-scene-1';
+import {createHousingMarkers} from './housing-markers.js?v=home-scene-1';
+import {createHousingScene,ISOLATED_HOME} from './housing-scene.js?v=home-scene-1';
 import {g as input,k as controls,Aa as wardrobe} from './chunk-G7D6MVRW.js?v=mobile-29';
+import {b as overview} from './chunk-OZ77422N.js?v=car-45';
 
 export function createHousing(){
  let body=null,world=null,interior=null,ws=null,model=null,visit=null,travel=null,pending=null,seq=0,clock=0,nextPoll=0,lastIsland='',beforeBlocked=false,releaseId='',failed=false,exitWhenConnected=false;
+ let loader=null,markers=null,partition=null,preparing=null,mapTravel=null;
+ const isolate=new URLSearchParams(location.search).get('homeScene')!=='legacy';
  const online=()=>window.__candyOnline,position=()=>body?.translation?.();
  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./housing.css?v=homes-1',import.meta.url).href;document.head.append(sheet);
  const button=document.createElement('button');button.id='park-home-button';button.type='button';button.textContent='⌂ Homes';button.setAttribute('aria-haspopup','dialog');button.hidden=true;
@@ -33,7 +38,7 @@ export function createHousing(){
    for(const b of card.querySelectorAll('[data-home-action]')){
     const a=b.dataset.homeAction;
     b.hidden=a==='claim'?!!q?.owner:a==='lock'||a==='release'?!own:a==='enter'?!q?.owner||!nearDoor(h,arr)||!!visit:false;
-    b.disabled=!connected||!!pending||(a==='claim'&&!!mine)||(a==='enter'&&q?.locked&&!own);
+    b.disabled=!connected||!!pending||!!preparing||(a==='claim'&&!!mine)||(a==='enter'&&q?.locked&&!own);
     if(a==='lock')b.textContent=q?.locked?'Unlock door':'Lock door';
     if(a==='release')b.textContent=releaseId===h.id?'Confirm release':'Release home';
    }
@@ -43,9 +48,25 @@ export function createHousing(){
   if(!connected)say('Connecting to this island. Homes will be ready when the server reconnects.');
   else if(!pending&&!message.textContent)say('Choose an available cottage, then go to its front door.');
  }
- function send(action,house,extra={}){
+ function prepareRoom(done,onFailure){
+  if(preparing||!loader)return false;
+  const ticket={world,loader,island:online()?.data.island?.code};preparing=ticket;
+  say('Preparing home… You can still move and chat.');render();
+  loader.prepare().then(room=>{
+   if(preparing!==ticket||world!==ticket.world||failed)return;
+   preparing=null;interior=room;
+   if(ticket.island===online()?.data.island?.code)done();
+   render();
+  }).catch(()=>{
+   if(preparing!==ticket)return;preparing=null;
+   say('Home could not load. You are safe outside. Press Enter to try again.');
+   onFailure?.();render();
+  });return true;
+ }
+ function send(action,house,extra={},prepared=false){
+  if(action==='enter'&&!prepared&&!interior){return prepareRoom(()=>send(action,house,extra,true));}
   if(action==='exit'&&visit&&!online()?.data.connected){travel={house:null,p:houseById(visit).door};exitWhenConnected=true;pending=null;return true;}
-  if(pending||!online()?.data.connected){say('Wait for the island connection, then try again.');return false;}
+  if(pending||preparing||!online()?.data.connected){say('Wait for the island connection, then try again.');return false;}
   if(action!=='sync')releaseControls();
   const request='home-'+(++seq);pending={request,at:clock,action};
   const ok=online().send({t:'house.'+action,house,request,...extra});
@@ -57,7 +78,7 @@ export function createHousing(){
   if(m.t==='house.state'){model=m;if(!m.visiting&&!travel&&(visit||isHousingZone(position()?.x,position()?.z)))travel={house:null,p:(houseById(visit)||HOUSES[0]).door};render();}
   else if(m.t==='house.travel'&&Array.isArray(m.p)&&m.p.length===3&&m.p.every(Number.isFinite)&&(!m.house||houseById(m.house))){pending=null;travel=m;}
   else if(m.t==='house.result'){
-   if(pending?.request===m.request){const action=pending.action;pending=null;say(m.ok?(action==='claim'?'It’s yours! Go to the front door to enter.':action==='lock'?'Door updated.':action==='release'?'Home released.':''):m.message||'Please try again.');render();}
+   if(pending?.request===m.request){const action=pending.action;pending=null;if(action==='exit'&&!m.ok)mapTravel=null;say(m.ok?(action==='claim'?'It’s yours! Go to the front door to enter.':action==='lock'?'Door updated.':action==='release'?'Home released.':''):m.message||'Please try again.');render();}
   }
  }
  function interact(){
@@ -67,6 +88,15 @@ export function createHousing(){
   const h=HOUSES.find(h=>nearDoor(h,[p.x,p.y,p.z]));if(!h)return false;
   if(state(h)?.owner)send('enter',h.id);else{open();cards.get(h.id).scrollIntoView({block:'nearest'});}
   return true;
+ }
+ function travelFromMap(go){
+  if(!visit)return undefined;
+  if(pending||preparing||typeof go!=='function')return false;
+  // Keep server admission and local scene in agreement before applying the
+  // existing validated map destination. Never teleport out of an occupied room.
+  const ticket={go,world,island:online()?.data.island?.code};
+  if(!send('exit'))return false;
+  mapTravel=ticket;return true;
  }
  button.addEventListener('click',open);panel.querySelector('.home-close').addEventListener('click',close);
  panel.addEventListener('cancel',e=>{e.preventDefault();close();});
@@ -85,23 +115,32 @@ export function createHousing(){
  hint.addEventListener('click',()=>{if(!interact())open();});
  function tick(nextBody,map){
   body=nextBody;clock=performance.now();const w=window.__islandWorld;
-  if(w!==world){interior?.dispose();interior=null;world=w;visit=null;model=null;lastIsland='';}
-  if(map!=='city'||!world?.ready){button.hidden=true;hint.hidden=true;return;}
-  if(!interior)interior=createHousingInterior(world);
+  if(w!==world){preparing=mapTravel=null;partition?.dispose();loader?.dispose();markers?.dispose();loader=markers=partition=null;interior=null;world=w;visit=null;model=null;travel=null;lastIsland='';}
+  if(map!=='city'||!world?.ready){if(map!=='city'){preparing=mapTravel=null;travel=null;visit=null;}partition?.leave();interior?.show(null);markers?.show(false);button.hidden=true;hint.hidden=true;return;}
+  if(!loader){loader=createHousingLoader(world);markers=createHousingMarkers(world);partition=createHousingScene(world);world.homeScene=partition;}
   button.hidden=!!wardrobe.open;
   if(online()?.ws!==ws){ws?.removeEventListener('message',received);ws=online()?.ws;ws?.addEventListener('message',received);model=null;lastIsland='';pending=null;}
   const island=online()?.data.island?.code;
   if(online()?.data.connected&&island&&island!==lastIsland){lastIsland=island;pending=null;send(exitWhenConnected?'exit':'sync');exitWhenConnected=false;}
-  if(pending&&clock-pending.at>6000){pending=null;say('The server did not answer. Please try again.');render();}
+  if(pending&&clock-pending.at>6000){pending=mapTravel=null;say('The server did not answer. Please try again.');render();}
   if(travel&&body){
-   visit=travel.house||null;interior.show(houseById(visit));
+   if(travel.house&&!interior){
+    if(!preparing)prepareRoom(()=>{},()=>{travel=null;online()?.send({t:'house.exit'});});
+    return;
+   }
+   const destination=!travel.house&&mapTravel;mapTravel=null;
+   visit=travel.house||null;interior?.show(houseById(visit));
+   if(isolate&&visit===ISOLATED_HOME&&!overview.on)partition.enter();else partition.leave();
    const [x,y,z]=travel.p,from=body.translation();
    // Preserve the player's chosen orbit, but never sweep across the entire map.
    for(const cam of new Set([world.camera,window.__eggyCam]))if(cam?.position){cam.position.x+=x-from.x;cam.position.y+=y-from.y;cam.position.z+=z-from.z;cam.updateMatrixWorld();}
    body.setTranslation({x,y,z},true);body.setLinvel({x:0,y:0,z:0},true);body.setAngvel?.({x:0,y:0,z:0},true);
    releaseControls();if(travel.reason)say(travel.reason);travel=null;close();render();
+   if(destination&&destination.world===world&&destination.island===online()?.data.island?.code)destination.go();
   }
-  interior.step();
+  // The map overview still needs the exterior, even while visiting a house.
+  if(isolate&&visit===ISOLATED_HOME&&!overview.on)partition.enter();else partition.leave();
+  interior?.step();partition.step();markers.show(!visit);
   // Never leave a disconnected player trapped behind a UI. Local exit returns
   // to the door; the next connection authoritatively resynchronizes ownership.
   if(visit&&!online()?.data.connected&&panel.open){panel.querySelector('#home-inside button').disabled=false;}
@@ -109,12 +148,12 @@ export function createHousing(){
   const p=position(),h=visit?houseById(visit):p&&HOUSES.find(h=>nearDoor(h,[p.x,p.y,p.z]));
   const available=!!h&&!wardrobe.open&&!controls.blocked&&!online()?.data.room&&!window.__candy?.state?.().mounted;
   hint.hidden=!available;
-  if(available){const nearExit=visit&&Math.hypot(p.x-h.room.x,p.z-h.room.z-5)<2;hint.textContent=visit?(nearExit?'Interact · Leave '+h.name:h.name+' · Home controls'):state(h)?.owner?'Interact · Enter '+h.name:'Interact · Claim '+h.name;}
+  if(available){const nearExit=visit&&Math.hypot(p.x-h.room.x,p.z-h.room.z-5)<2;hint.textContent=preparing?'Preparing home…':loader?.stats.phase==='error'&&!visit?'Home unavailable · Tap to retry':visit?(nearExit?'Interact · Leave '+h.name:h.name+' · Home controls'):state(h)?.owner?'Interact · Enter '+h.name:'Interact · Claim '+h.name;}
   if(panel.open)render();
  }
  return {
-  step(body,input,dt,map){if(failed)return;try{tick(body,map);}catch(e){failed=true;close();if(visit){const h=houseById(visit);online()?.send({t:'house.exit'});if(h&&body){body.setTranslation({x:h.door[0],y:h.door[1],z:h.door[2]},true);body.setLinvel({x:0,y:0,z:0},true);}}button.hidden=hint.hidden=true;interior?.dispose();console.error('[housing]',e);}},
-  interact,open,
-  debug:()=>({visit,model,pending,failed,resources:interior?.stats()}),
+  step(body,input,dt,map){if(failed)return;try{tick(body,map);}catch(e){failed=true;close();if(visit){const h=houseById(visit);online()?.send({t:'house.exit'});if(h&&body){body.setTranslation({x:h.door[0],y:h.door[1],z:h.door[2]},true);body.setLinvel({x:0,y:0,z:0},true);}}button.hidden=hint.hidden=true;partition?.dispose();loader?.dispose();markers?.dispose();console.error('[housing]',e);}},
+  interact,open,travelFromMap,
+  debug:()=>({visit,model,pending,failed,loading:loader?.stats,scene:partition?.stats,resources:interior?.stats()}),
  };
 }

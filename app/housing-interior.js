@@ -4,7 +4,7 @@ import {HOUSES,inRoom,roomObstacle} from './housing-layout.js';
 
 // A small, reusable dollhouse interior. No GLB, texture downloads, shadow maps,
 // timers or physics world per house. Only the currently visited room is drawn.
-export function createHousingInterior(world){
+export function createHousingInterior(world,{markers=true}={}){
  const root=new T.Group();root.name='67PARK_HOME_INTERIOR';root.visible=false;
  const geometry=new RoundedBoxGeometry(1,1,1,2,.065),materials=[],batches=new Map();
  const add=(color,x,y,z,sx,sy,sz)=>{if(!batches.has(color))batches.set(color,[]);batches.get(color).push([x,y,z,sx,sy,sz]);};
@@ -55,9 +55,12 @@ export function createHousingInterior(world){
   mesh.instanceMatrix.needsUpdate=true;mesh.receiveShadow=true;root.add(mesh);
  }
  world.scene.add(root);
- let current=null;
- const restores=[];
- function wrap(target,key,fn){const prev=target[key];if(typeof prev!=='function')return;const next=(...args)=>fn(prev,...args);target[key]=next;restores.push(()=>{if(target[key]===next)target[key]=prev;});}
+ let current=null,installed=false,disposed=false;
+ const restores=[],installs=[];
+ // Preparation can time out while shader compilation continues. Do not install
+ // world hooks until the prepared room is actually used; a late discarded room
+ // must not remain underneath the retry's collision/ground function chain.
+ function wrap(target,key,fn){installs.push(()=>{const prev=target[key];if(typeof prev!=='function')return;const next=(...args)=>fn(prev,...args);target[key]=next;restores.push(()=>{if(target[key]===next)target[key]=prev;});});}
  const inside=(x,z)=>current&&inRoom(current,x,z,3);
  wrap(world,'ground',(old,x,z,...args)=>inside(x,z)?current.room.y:old(x,z,...args));
  wrap(world,'terrainGround',(old,x,z,...args)=>inside(x,z)?current.room.y:old(x,z,...args));
@@ -70,11 +73,12 @@ export function createHousingInterior(world){
  const signMaterial=new T.MeshStandardMaterial({color:'#f0da9d',roughness:.75});materials.push(signMaterial);
  const signs=new T.InstancedMesh(geometry,signMaterial,HOUSES.length);signs.name='67PARK_HOME_DOOR_MARKERS';
  HOUSES.forEach((h,i)=>{mat4.makeRotationY(h.yaw);mat4.scale(new T.Vector3(.35,.85,.1));mat4.setPosition(h.door[0]+Math.cos(h.yaw)*1.1,h.door[1],h.door[2]-Math.sin(h.yaw)*1.1);signs.setMatrixAt(i,mat4);});
- signs.instanceMatrix.needsUpdate=true;world.scene.add(signs);
+ signs.instanceMatrix.needsUpdate=true;if(markers)world.scene.add(signs);
  return {
-  show(h){current=h||null;root.visible=!!h;signs.visible=!h;if(h)root.position.set(h.room.x,h.room.y,h.room.z);},
+  prepare:()=>world.renderer?.compileAsync?.(root,world.camera,world.scene),
+  show(h){if(disposed)return;if(h&&!installed){installed=true;for(const install of installs)install();}current=h||null;root.visible=!!h;signs.visible=!h;if(h)root.position.set(h.room.x,h.room.y,h.room.z);},
   step(){if(!current)return;const c=world.camera.position;for(const w of walls)w.mesh.visible=w.x?Math.sign(w.x)*(c.x-current.room.x)<6.8:Math.sign(w.z)*(c.z-current.room.z)<5.8;},
-  dispose(){current=null;for(const f of restores.reverse())f();root.removeFromParent();signs.removeFromParent();geometry.dispose();ceilingGeometry.dispose();materials.forEach(m=>m.dispose());},
+  dispose(){if(disposed)return;disposed=true;current=null;for(const f of restores.reverse())f();root.removeFromParent();signs.removeFromParent();geometry.dispose();ceilingGeometry.dispose();materials.forEach(m=>m.dispose());},
   stats:()=>({room:current?.id||null,draws:root.children.length,instances:[...batches.values()].reduce((n,a)=>n+a.length,0),newTextureBytes:0}),
  };
 }

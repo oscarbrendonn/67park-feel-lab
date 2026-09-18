@@ -11,7 +11,7 @@ try{for(const mobile of [false,true]){
  const read=()=>page.evaluate(async()=>{const {k:controls}=await import('./app/chunk-G7D6MVRW.js?v=mobile-29');return {monitor:{...__stability},render:__islandWorld.renderer.info.render.frame,programs:__islandWorld.renderer.info.programs?.length,p:__eggyInput.playerRef.body.translation(),camera:__islandWorld.camera.position.toArray(),blocked:controls.blocked,house:__parkHousing.debug().visit,errors:[...(__candyErrors||[])],party:__party.status().disabled}});
  const reset=()=>page.evaluate(()=>{__stability.maxGap=0});
  async function check(label,fn){await reset();const before=await read();await fn();await page.waitForTimeout(650);const after=await read();console.log('ACTION',JSON.stringify({mobile,label,rendered:after.render-before.render,programDelta:after.programs-before.programs,...after}));assert(after.render-before.render>=4,label+' render stopped');assert(after.monitor.maxGap<2000,label+' long frame stall');assert.equal(after.monitor.losses,0);assert.equal(after.party,false);assert.deepEqual(after.errors,[]);assert.deepEqual(errors,[]);return after;}
- const house=mobile?'H04':'H03';
+ const house=process.env.HOUSE||(mobile?'H04':'H03');
  const send=action=>page.evaluate(({action,house})=>__candyOnline.send({t:'house.'+action,house}),{action,house});
  await send('claim');await page.waitForFunction(h=>__parkHousing.debug().model.houses.find(q=>q.id===h).owner===__candyOnline.data.me.id,house);
  if(process.env.SKATE)await page.keyboard.press('KeyV');
