@@ -56,7 +56,7 @@ function nearestRemote() {
   if (!pose.valid) return null;
   let chosen = null, distance = 1.9;
   for (const [id, entry] of remotes) {
-    if (id === localId || !entry.root?.visible) continue;
+    if (id === localId || !entry.root?.visible || globalThis.__parkHousing?.isPlayerResting?.(id)) continue;
     const p = entry.root.position, dx = p.x-pose.x, dz = p.z-pose.z;
     const d = Math.hypot(dx,dz);
     if (d >= distance || Math.abs(p.y-pose.y) > 1.7) continue;

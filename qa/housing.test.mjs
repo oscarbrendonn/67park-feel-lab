@@ -125,3 +125,7 @@ test('new lobby arrivals refresh the invitation roster and expired invites disap
  assert(f.sent.findLast(m=>m.id==='alice'&&m.t==='house.state').people.some(p=>p.id==='dan'));
  f.advance(300001);f.hub.update();assert.equal(f.sent.findLast(m=>m.id==='bob'&&m.t==='house.state').invitations.length,0);
 });
+test('releasing a home clears poses even if a visitor disconnected before cleanup',()=>{
+ const f=fixture(),s=HOME_SPOTS[0];f.act(f.a,'claim');f.act(f.b,'enter');f.b.lastPosition={p:spotPosition(HOUSES[0],s,true)};f.act(f.b,'rest',{spot:s.id});
+ f.hub.players.delete(f.b.id);f.hub.lobbies.get('A').members.delete(f.b.id);f.act(f.a,'release');assert.deepEqual(f.state(f.a).poses,[]);
+});

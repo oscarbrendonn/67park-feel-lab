@@ -53,8 +53,13 @@ const LIVE=process.env.SOCIAL_LIVE==='1';
   console.log('BED BOTH CLIENTS',JSON.stringify(await poses(b)));
   await detail(b,'bed');
   await a.keyboard.down('KeyW');await a.waitForTimeout(450);await a.keyboard.up('KeyW');assert.equal(await a.evaluate(()=>__parkHousing.debug().rest),null);
-  if(!LIVE){await b.evaluate(()=>__candyOnline.ws.close());await b.waitForTimeout(3500);await wait(b,()=>__candyOnline.data.connected&&__parkHousing.debug().rest==='bed');}
-  await b.locator('#park-home-hint').tap();await wait(b,()=>!__parkHousing.debug().rest);
+  if(!LIVE){
+   await b.evaluate(()=>__candyOnline.ws.close());await b.waitForTimeout(3500);await wait(b,()=>__candyOnline.data.connected&&__parkHousing.debug().rest==='bed');
+   await b.context().setOffline(true);await b.evaluate(()=>__candyOnline.ws.close());await wait(b,()=>!__candyOnline.data.connected);
+   await b.locator('#park-home-hint').tap();await wait(b,()=>!__parkHousing.debug().rest&&__parkHousing.debug().standQueued);
+   await b.context().setOffline(false);await wait(b,()=>__candyOnline.data.connected&&__parkHousing.debug().model?.rest===null&&!__parkHousing.debug().standQueued);
+   const p=await b.evaluate(()=>__eggyInput.playerRef.body.translation());assert(p.x<483,'offline stand is not undone by a reconnect teleport into the bed');
+  }else{await b.locator('#park-home-hint').tap();await wait(b,()=>!__parkHousing.debug().rest);}
   // Spam real UI controls, not crafted socket traffic (which the existing
   // anti-abuse server deliberately disconnects). Unit tests cover that layer.
   const frame=await b.evaluate(()=>__islandWorld.renderer.info.render.frame);

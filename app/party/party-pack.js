@@ -1,5 +1,5 @@
 import {createParkLaunchers} from "./park-launchers.js?v=1";
-import {createHousing} from '../housing.js?v=home-social-1';
+import {createHousing} from '../housing.js?v=home-social-2';
 import '../chat-send-focus.js?v=homes-1';
 import {createParkSocialToys} from "./park-social-toys.js?v=balloon-lift-2";
 import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
@@ -11,7 +11,7 @@ import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
 import * as THREE from 'three';
 import {playerSettings as settings,savePlayerSettings as saveSettings} from '../player-settings.js';
 import {installPlayerSettings} from './settings-panel.js';
-import { createPartyAudio } from './party-audio.js?v=home-social-1';
+import { createPartyAudio } from './party-audio.js?v=home-social-2';
 
 const BASE = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
 const CFG = Object.assign({runtime: '', carry: ''}, (typeof window !== 'undefined' && window.__partyConfig) || {});

@@ -37,7 +37,7 @@ export function installHousing(app){
   function release(lobby,id){
    homes.get(lobby)?.delete(id);
    for(const inbox of invites.values())inbox.delete(lobby+':'+id);
-   for(const [pid,v]of [...visits])if(v.lobby===lobby&&v.house===id){const p=hub.players.get(pid);if(p)exit(p,'This home is now available.',false);else visits.delete(pid);}
+   for(const [pid,v]of [...visits])if(v.lobby===lobby&&v.house===id){const p=hub.players.get(pid);if(p)exit(p,'This home is now available.',false);else{visits.delete(pid);rests.delete(pid);}}
    changed(lobby);
   }
   function validInvite(p,i){return i.expires>hub.now()&&i.lobby===p.lobbyId&&homes.get(i.lobby)?.get(i.house)?.owner===i.owner&&hub.lobbies.get(i.lobby)?.members.has(i.owner);}

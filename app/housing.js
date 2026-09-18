@@ -3,9 +3,9 @@ import {createHousingLoader} from './housing-loader.js?v=home-entry-2';
 import {createHousingMarkers} from './housing-markers.js?v=home-scene-1';
 import {createHousingScene,ISOLATED_HOME} from './housing-scene.js?v=home-scene-1';
 import {g as input,k as controls,Aa as wardrobe,i as board} from './chunk-G7D6MVRW.js?v=mobile-29';
-import {b as overview} from './chunk-OZ77422N.js?v=home-social-1';
+import {b as overview} from './chunk-OZ77422N.js?v=home-social-2';
 import {HOME_SPOTS,homeSpot,spotPosition,nearHomeSpot} from './housing-actions.js';
-import {queueHomePose} from './housing-poses.js?v=home-social-1';
+import {queueHomePose} from './housing-poses.js?v=home-social-2';
 
 export function createHousing({sound=()=>{}}={}){
  let body=null,world=null,interior=null,ws=null,model=null,visit=null,travel=null,pending=null,seq=0,clock=0,nextPoll=0,lastIsland='',beforeBlocked=false,releaseId='',failed=false,exitWhenConnected=false;
@@ -13,7 +13,7 @@ export function createHousing({sound=()=>{}}={}){
  let rest=null,standQueued=false,lastStand=0,bell=null,bellUntil=0,peopleKey='',inboxKey='';
  const isolate=new URLSearchParams(location.search).get('homeScene')!=='legacy';
  const online=()=>window.__candyOnline,position=()=>body?.translation?.();
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./housing.css?v=home-social-1',import.meta.url).href;document.head.append(sheet);
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./housing.css?v=home-social-2',import.meta.url).href;document.head.append(sheet);
  const button=document.createElement('button');button.id='park-home-button';button.type='button';button.textContent='⌂ Homes';button.setAttribute('aria-haspopup','dialog');button.hidden=true;
  const panel=document.createElement('dialog');panel.id='park-homes';panel.setAttribute('aria-labelledby','homes-title');
  panel.innerHTML='<header><div><small>YOUR LITTLE PLACE IN THE PARK</small><h2 id="homes-title">Make yourself at home</h2></div><button type="button" class="home-close" aria-label="Close homes">×</button></header><p>Claim a cottage. Invite your friends over.</p><div id="home-inside" hidden><button type="button" data-home-action="exit">Leave home</button><strong></strong><br><span>Move, jump and chat together.</span></div><div class="home-grid"></div><p id="home-message" role="status" aria-live="polite"></p><small>ONE HOME PER PERSON · THIS LOBBY ONLY</small><p style="font-size:11px;margin:6px 0 0">Your home stays reserved during a short reconnect. Leaving this lobby releases it. A locked door stops new visitors; friends already inside can stay.</p>';
@@ -153,7 +153,7 @@ export function createHousing({sound=()=>{}}={}){
   button.hidden=!!wardrobe.open;
   if(online()?.ws!==ws){ws?.removeEventListener('message',received);ws=online()?.ws;ws?.addEventListener('message',received);model=null;lastIsland='';pending=null;}
   const island=online()?.data.island?.code;
-  if(online()?.data.connected&&island&&island!==lastIsland){lastIsland=island;pending=null;send(exitWhenConnected?'exit':'sync');exitWhenConnected=false;}
+  if(online()?.data.connected&&island&&island!==lastIsland){lastIsland=island;pending=null;send(exitWhenConnected?'exit':standQueued?'stand':'sync');exitWhenConnected=false;}
   if(pending&&clock-pending.at>6000){pending=mapTravel=null;say('The server did not answer. Please try again.');render();}
   if(travel&&body){
    if(travel.house&&!interior){
@@ -192,8 +192,8 @@ export function createHousing({sound=()=>{}}={}){
   step(body,input,dt,map){if(failed)return;try{tick(body,map);}catch(e){failed=true;close();if(visit){const h=houseById(visit);online()?.send({t:'house.exit'});if(h&&body){body.setTranslation({x:h.door[0],y:h.door[1],z:h.door[2]},true);body.setLinvel({x:0,y:0,z:0},true);}}button.hidden=hint.hidden=true;partition?.dispose();loader?.dispose();markers?.dispose();console.error('[housing]',e);}},
   interact,open,travelFromMap,isResting:()=>!!rest&&!failed,
   isPlayerResting:id=>!!model?.poses?.some(p=>p.id===id),
-  visual(root,dt){queueHomePose(root,homeSpot(rest),houseById(visit),dt);},
-  remoteVisual(root,id,dt,map){const r=map==='city'&&model?.poses?.find(p=>p.id===id);queueHomePose(root,homeSpot(r?.spot),houseById(r?.house),dt);},
+  visual(root,dt){queueHomePose(root,homeSpot(!failed&&rest),houseById(!failed&&visit),dt);},
+  remoteVisual(root,id,dt,map){const r=!failed&&map==='city'&&model?.poses?.find(p=>p.id===id);queueHomePose(root,homeSpot(r?.spot),houseById(r?.house),dt);},
   debug:()=>({visit,rest,standQueued,model,pending,failed,loading:loader?.stats,scene:partition?.stats,resources:interior?.stats()}),
  };
 }

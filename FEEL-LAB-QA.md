@@ -167,7 +167,7 @@ HOUSE=H01 node qa/action-stability.cjs
 These remain bounded Chrome tests, not physical iPhone/Android certification.
 Use `node qa/housing-layout-browser.cjs` for repeatable close-view captures.
 
-## Home social interactions — home-social-1
+## Home social interactions — home-social-2
 
 - Feel Lab frontend only. Additive server protocol keeps existing clients,
   island identity/chat, vehicles and the 16-person production cap unchanged.
@@ -189,7 +189,7 @@ Use `node qa/housing-layout-browser.cjs` for repeatable close-view captures.
   short interruptible blend, and the existing render loop. No added GLB,
   texture, geometry, shadow, light, separate loop or audio download. Changed
   frontend JavaScript adds approximately 4 KB gzip across affected modules.
-- 46 focused unit/regression tests passed: protocol/privacy/expiry/rates,
+- 48 focused unit/regression tests passed: protocol/privacy/expiry/rates,
   all-eight-house clear stand points, 1,000-pose accumulation, duplicate rigs,
   immediate pose release, room geometry, loader failure/retry, scene isolation,
   camera, lobby and returning-player entry.
@@ -199,6 +199,12 @@ Use `node qa/housing-layout-browser.cjs` for repeatable close-view captures.
   1,000 actual UI clicks, subsequent shared chat and 320/390/844 px dialog checks.
   Normal and close inspection captures were visually reviewed; the sofa anchors
   were moved ahead of decorative pillows to keep legs clear.
+- A further offline recovery case passed: stand while disconnected, reconnect,
+  and remain at the clear stand point rather than snapping back inside the bed.
+  The owner's bell also registered on the running audio graph in the browser.
+- Updated the old carry regression's instantaneous overhead-position expectation
+  to the already-existing 200 ms hand-contact blend; additionally checks that
+  a resting guest cannot be grabbed and home interaction takes priority.
 - Three-client regression passed: failed room-load recovery, indoor/outdoor
   peers, an independently moving car, chat, map overview/travel and repeated
   entry/exit. No page/game errors were recorded in these bounded runs.
