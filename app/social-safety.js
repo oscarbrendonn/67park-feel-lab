@@ -4,7 +4,10 @@ const state=globalThis[Symbol.for(KEY)]??={blocked:new Set(),muted:new Set(),nam
 if(!state.loaded){state.loaded=true;try{const s=JSON.parse(globalThis.localStorage?.getItem(KEY)||'{}');for(const k of ['blocked','muted'])state[k]=new Set((s[k]||[]).filter(validSafetyId).slice(0,SAFETY_LIMIT));state.names=s.names||{};}catch{}}
 export const hidesPlayerChat=id=>state.blocked.has(id)||state.muted.has(id);
 export const safetySnapshot=()=>({blocked:[...state.blocked],muted:[...state.muted],pending:state.pending.size});
-function persist(){try{localStorage.setItem(KEY,JSON.stringify({...safetySnapshot(),names:state.names}));}catch{chatFeedback('Safety works now, but browser storage is unavailable. Keep this tab open.');}}
+function persist(){
+ for(const id of Object.keys(state.names))if(!state.blocked.has(id)&&!state.muted.has(id)&&!state.pending.has('blocked:'+id)&&!state.pending.has('muted:'+id))delete state.names[id];
+ try{localStorage.setItem(KEY,JSON.stringify({...safetySnapshot(),names:state.names}));}catch{chatFeedback('Safety works now, but browser storage is unavailable. Keep this tab open.');}
+}
 function changed(){
  const net=globalThis.__eggyNet;
  if(net?.chat){const filtered=net.chat.filter(m=>!hidesPlayerChat(m.id));if(filtered.length!==net.chat.length){net.chat=filtered;net.bump?.();}}
@@ -22,6 +25,7 @@ export function setPlayerSafety(kind,id,value,name='Guest'){
  if(!ws){chatFeedback('Reconnect before changing player safety.');return false;}
  if(value&&state[kind].size>=SAFETY_LIMIT&&!state[kind].has(id)){chatFeedback('Safety list is full. Remove an old entry first.');return false;}
  const key=kind+':'+id;if(state.pending.has(key))return false;
+ if(state.pending.size>=16){chatFeedback('Wait for your previous safety changes to finish.');return false;}
  // Do not accumulate a queue while offline. Server acknowledgement is required.
  state.pending.set(key,{kind,id,value,at:Date.now()});
  if(value)state[kind].add(id); // hide immediately; removals wait for authority
