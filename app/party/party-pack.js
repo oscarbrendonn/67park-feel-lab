@@ -1,4 +1,5 @@
 import {createParkLaunchers} from "./park-launchers.js?v=1";
+import {createParkPets} from '../pets/park-pets.js?v=pets-1';
 import {createHousing} from '../housing.js?v=home-social-3';
 import '../chat-send-focus.js?v=homes-1';
 import {createParkSocialToys} from "./park-social-toys.js?v=balloon-lift-2";
@@ -47,6 +48,8 @@ const scene = () => window.__eggyScene || null;
 const net = () => window.__eggyNet || null;
 let stateApi = null, carryApi = null; // the game's own modules (same instances as main.js: exact same URLs)
 const state = () => { try { return stateApi ? stateApi() : null; } catch { return null; } };
+const pets = createParkPets({world,net,heading:()=>player.visual?.rotation.y??state()?.heading??0,reducedMotion});
+window.__parkPets = pets;
 (async () => {
   try { stateApi = (await import(`${BASE}/app/claude-gorilla-runtime.js${CFG.runtime ? '?v=' + CFG.runtime : ''}`)).claudeGorillaState; }
   catch (e) { log('runtime import failed', e); }
@@ -70,6 +73,7 @@ let previousHeld = '';
 window.__partyStep = guard((body, input, dt, map) => {
   player.body = body || null; player.map = map;
   housing.step(body,input,dt,map);
+  pets.step(body,dt,map);
   dt = clamp(finite(dt) ? dt : 0, 0, 0.05);
   netHook.step();
   knockStep(dt);
