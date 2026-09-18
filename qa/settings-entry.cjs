@@ -8,6 +8,8 @@ try{for(const mobile of [false,true]){
  await page.goto(base+'?v=settings-entry-1',{waitUntil:'domcontentloaded',timeout:120000});
  await page.locator('#party-settings-btn').waitFor({state:'attached',timeout:30000});
  await page.locator('.wardrobe').waitFor();assert.equal(await page.locator('#party-settings-btn').isVisible(),false);
+ await page.getByRole('button',{name:'Choose & dress up',exact:true}).click();
+ await page.getByRole('dialog',{name:'Style Studio',exact:true}).waitFor();
  await page.getByRole('button',{name:'Enter the park',exact:true}).click({timeout:180000});
  await page.locator('#party-settings-btn').waitFor({state:'visible',timeout:180000});
  await page.locator('#party-settings-btn').click();await page.locator('#party-settings').waitFor({state:'visible'});

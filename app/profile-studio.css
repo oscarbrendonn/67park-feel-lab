@@ -1,3 +1,4 @@
+@import url('./studio-panel.css?v=studio-flow-1');
 .wardrobe-profile .wardrobe-display-box,.wardrobe-profile .wardrobe-character-title,.wardrobe-profile .wardrobe-demo{display:none!important}
 .wardrobe-profile .wardrobe-stage{background:linear-gradient(180deg,#ead4d4,#f3e2e2 55%,#fff2f2)!important;border-radius:28px;overflow:hidden}
 .wardrobe-profile .wardrobe-header nav button:first-child{display:none}

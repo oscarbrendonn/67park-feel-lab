@@ -11,9 +11,7 @@ export function rememberCharacter(base) {
 }
 export function openPlayerStudio(equip,openWardrobe) {
   window.dispatchEvent(new Event('park:release-controls'));
-  // Friends retain their own equipped model and working in-game item editor.
-  if(equip.base!=='goril') { openWardrobe(true); return; }
-  const root=new URL('../',import.meta.url);
-  try { sessionStorage.setItem('67park.studio-return.'+root.pathname,location.pathname+location.search); } catch {}
-  location.assign(new URL('style-studio/?from=profile&v=5',root));
+  // Keep the existing session, party and world alive while changing clothes.
+  // Every base uses the same in-game studio; no detached preview navigation.
+  openWardrobe(true);
 }
