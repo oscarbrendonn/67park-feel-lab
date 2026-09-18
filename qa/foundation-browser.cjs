@@ -34,7 +34,10 @@ async function run(mobile){
   await page.locator('[data-return-entry=error]').waitFor({timeout:60000});assert(failed>0);assert.equal(await page.locator('#party-settings-btn').isVisible(),false);
   console.log('PASS failed asset offers retry',mobile);
   await page.unroute('**/island/ada_calisma.glb*');await page.getByRole('button',{name:'Retry loading',exact:true}).click();
-  await page.waitForFunction(()=>window.__islandWorld?.ready&&window.__eggyNet?.connected&&window.__candyOnline?.data.connected&&window.__parkHousing?.debug().model&&!document.querySelector('.wardrobe'),null,{timeout:60000});
+  // The GPU-less CI runner needs longer for the cold shader compilation than
+  // the local hardware browser. This is a bounded LOAD timeout; the gameplay
+  // stall threshold below stays unchanged and is measured only after entry.
+  await page.waitForFunction(()=>window.__islandWorld?.ready&&window.__eggyNet?.connected&&window.__candyOnline?.data.connected&&window.__parkHousing?.debug().model&&!document.querySelector('.wardrobe'),null,{timeout:180000});
   console.log('PASS asset retry',mobile);errors.length=0;
   const read=()=>page.evaluate(()=>({frame:__islandWorld.renderer.info.render.frame,gap:__gate.maxGap,losses:__gate.losses,party:__party.status(),home:__parkHousing.debug(),id:__candyOnline.data.me.id,connected:__eggyNet.connected&&__candyOnline.data.connected,programs:__islandWorld.renderer.info.programs?.length}));
   async function check(name,action){await page.evaluate(()=>{__gate.maxGap=0});const before=await read();await action();await page.waitForTimeout(600);const after=await read();assert(after.frame-before.frame>=4,name+' renderer stopped');assert(after.gap<2500,name+' frame stall '+after.gap);assert.equal(after.losses,0);assert.equal(after.party.disabled,false);assert.equal(after.home.failed,false);assert.deepEqual(errors,[]);console.log('PASS',mobile,name,JSON.stringify({frames:after.frame-before.frame,maxGap:Math.round(after.gap),programs:after.programs}));}
