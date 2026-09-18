@@ -38,8 +38,10 @@ peer, 100 home transitions per view, repeated actions, rapid outfit changes and
 an intentionally failed optional feature. CI adds a 15-minute mobile session.
 The GPU-less hosted runner uses explicit SwiftShader with quarter-resolution
 canvas rendering and 256px shadows **inside the test only**, retaining the full
-scene, materials, UI and gameplay. The same stall/error assertions still apply.
-This is a functional/resource gate, not a phone FPS certificate. Local hardware
+scene, materials, UI and gameplay. Exceptions, lost contexts and stopped drawing
+still fail the gate. Software rasterization has a 15-second functional response
+deadline; the hardware run keeps its 2.5-second stall limit. The hosted runner's
+CPU shader work must not be advertised as real-device performance. Local hardware
 tests run the normal graphics profile; no released graphics setting is reduced.
 
 Pages uses the workflow build mode. Deployment needs the regression job to pass;
