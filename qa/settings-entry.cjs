@@ -1,0 +1,20 @@
+const {chromium}=require('/tmp/rush-test-tools/node_modules/playwright');
+const assert=require('node:assert/strict');
+const base=process.env.FEEL_URL||'http://127.0.0.1:8497/67park-feel-lab/';
+(async()=>{const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+try{for(const mobile of [false,true]){
+ const page=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1280,height:900},isMobile:mobile,hasTouch:mobile});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(base+'?v=settings-entry-1',{waitUntil:'domcontentloaded',timeout:120000});
+ await page.locator('#party-settings-btn').waitFor({state:'attached',timeout:30000});
+ await page.locator('.wardrobe').waitFor();assert.equal(await page.locator('#party-settings-btn').isVisible(),false);
+ await page.getByRole('button',{name:'Enter the park',exact:true}).click({timeout:180000});
+ await page.locator('#party-settings-btn').waitFor({state:'visible',timeout:180000});
+ await page.locator('#party-settings-btn').click();await page.locator('#party-settings').waitFor({state:'visible'});
+ await page.getByRole('button',{name:'Close settings',exact:true}).click();
+ await page.getByRole('button',{name:'Profile studio',exact:true}).click();
+ await page.waitForFunction(()=>location.pathname.includes('style-studio')||document.querySelector('.wardrobe'));
+ assert.equal(await page.locator('#party-settings-btn').isVisible(),false);
+ console.log('SETTINGS ENTRY/STUDIO PASS',JSON.stringify({mobile,errors}));
+ assert.deepEqual(errors,[]);await page.close();
+}}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

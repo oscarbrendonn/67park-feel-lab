@@ -22,6 +22,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const finite = v => Number.isFinite(v);
 const log = (...a) => { try { console.log('[party]', ...a); } catch {} };
 let disabled = false;
+let settingsUI = null;
 function guard(fn) {
   return function (...args) {
     if (disabled) return;
@@ -443,14 +444,14 @@ function installEggyButtons() {
       el.querySelector('.party-icon')?.remove(); el.insertAdjacentHTML('beforeend', ICONS[icon]); el.dataset.partyIcon = icon;
     }
   };
-  const tick = () => { try { dress(); decorate(); } catch {} };
+  const tick = () => { try { settingsUI?.setAvailable(!!player.body&&!document.querySelector('.wardrobe,.return-entry'));dress(); decorate(); } catch {} };
   tick(); setInterval(tick, 400);
 }
 
 // ---------- settings panel ----------
 function installSettings(){return installPlayerSettings({sfx,isTouch})}
 
-try { installSettings(); installControls(); log('ready', VERSION, 'base', BASE, 'touch', isTouch); }
+try { settingsUI=installSettings(); installControls(); log('ready', VERSION, 'base', BASE, 'touch', isTouch); }
 catch (e) { disabled = true; log('install failed', e); }
 window.__party = {version: VERSION, settings, sfx, hits, netHook, botFlights, botsInFront, toys, audio: () => sfx.state(),
   status: () => ({disabled, runtime: !!stateApi, carry: !!carryApi, spring: spring.v, map: player.map, ...items.count()}),

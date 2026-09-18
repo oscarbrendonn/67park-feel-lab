@@ -3,6 +3,7 @@ import {playerSettings as settings, setPlayerSetting, resetPlayerSettings, SETTI
 export function installPlayerSettings({sfx,isTouch}){
  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./settings-panel.css',import.meta.url).href;document.head.append(sheet);
  const gear=document.createElement('button');gear.id='party-settings-btn';gear.type='button';gear.textContent='Settings';gear.setAttribute('aria-label','Party settings');gear.setAttribute('aria-expanded','false');
+ gear.hidden=true;
  const panel=document.createElement('div');panel.id='party-settings';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','settings-title');
  const sizeKey=isTouch?'mobileButtonSize':'desktopButtonSize';
  const slider=(key,label,min,max,step,unit='%')=>`<label class="party-setting-row" for="setting-${key}"><span>${label}</span><output data-output="${key}"></output><input id="setting-${key}" data-setting="${key}" type="range" min="${min}" max="${max}" step="${step}" aria-label="${label}" data-unit="${unit}"></label>`;
@@ -34,6 +35,7 @@ export function installPlayerSettings({sfx,isTouch}){
  const reportText=()=>panel.querySelector('#settings-report').value+'\nYour description:\n'+panel.querySelector('#settings-report-description').value;
  const release=()=>window.dispatchEvent(new Event('park:release-controls'));
  const open=value=>{
+  if(value&&gear.hidden)return;
   release();panel.hidden=!value;root.toggleAttribute('data-park-settings-open',value);gear.setAttribute('aria-expanded',String(value));
   if(value){apply();report();panel.querySelector('.party-close').focus({preventScroll:true})}else{panel.querySelector('#settings-reset-confirm').hidden=true;gear.focus({preventScroll:true})}
   sfx.ensure();sfx.play('click');
@@ -75,5 +77,9 @@ export function installPlayerSettings({sfx,isTouch}){
  },true);
  window.addEventListener('keyup',e=>{if(!panel.hidden)e.stopImmediatePropagation()},true);
  apply();
- return {open,apply};
+ const setAvailable=value=>{
+  gear.hidden=!value;
+  if(!value&&!panel.hidden){release();panel.hidden=true;root.removeAttribute('data-park-settings-open');gear.setAttribute('aria-expanded','false');}
+ };
+ return {open,apply,setAvailable};
 }
