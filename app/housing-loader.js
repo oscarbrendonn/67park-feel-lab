@@ -1,6 +1,6 @@
 // One in-flight preparation and one reusable room. No frame callback awaits it.
 // Failed/stale attempts cannot attach an old room or leave controls blocked.
-export function createHousingLoader(world,{load=attempt=>import('./housing-interior.js?v=home-scene-1&attempt='+attempt),timeoutMs=12000}={}){
+export function createHousingLoader(world,{load=attempt=>import('./housing-interior.js?v=home-entry-2&attempt='+attempt),timeoutMs=12000}={}){
  let room=null,job=null,epoch=0,disposed=false,attempt=0;
  const stats={phase:'idle',attempts:0,error:''};
  return {

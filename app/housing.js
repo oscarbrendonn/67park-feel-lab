@@ -1,5 +1,5 @@
 import {HOUSES,houseById,nearDoor,isHousingZone} from './housing-layout.js';
-import {createHousingLoader} from './housing-loader.js?v=home-scene-1';
+import {createHousingLoader} from './housing-loader.js?v=home-entry-2';
 import {createHousingMarkers} from './housing-markers.js?v=home-scene-1';
 import {createHousingScene,ISOLATED_HOME} from './housing-scene.js?v=home-scene-1';
 import {g as input,k as controls,Aa as wardrobe} from './chunk-G7D6MVRW.js?v=mobile-29';

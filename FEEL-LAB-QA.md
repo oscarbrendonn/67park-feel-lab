@@ -135,3 +135,34 @@ node --loader ./qa/three-test-loader.mjs --test qa/housing-loader.test.mjs qa/ho
 FEEL_URL=http://127.0.0.1:8497/67park-feel-lab/ node qa/housing-scene-browser.cjs
 HOUSE=H01 node qa/action-stability.cjs
 ```
+
+## Clear doorway and rug placement — home-entry-2
+
+- Feel Lab only; the original desktop/mobile repositories and live server
+  behavior are unchanged. The shared room layout fixes apply to all eight homes.
+- Replaced the door's full backing slab with separate jambs and a lintel. The
+  door leaf has visible clearances; the knob touches its face without burying
+  itself in the panel. A thin threshold and centred mat are separate pieces.
+- The mat stops 0.35 m before the threshold and 0.78 m before the counter. The
+  floor finish now supports the entire living rug instead of ending beneath it.
+  Both rugs sit at the floor surface, not across a floor-height/material seam.
+- Door/window batches now follow their own cutaway wall. They cannot remain
+  floating in view after that wall disappears behind the camera.
+- No new model or texture downloads, no new lights, no collision/physics changes.
+  The reusable room still has 37 render objects; simple instances change from
+  41 to 44. The interior module grows by 541 gzip bytes in this checkout.
+- 33 focused unit/regression checks passed: geometry clearances, floor support,
+  all-eight-house wall visibility, repeated entry, late loader cleanup, scene
+  isolation, server admission, camera, returning entry and render health.
+- Inspected front, low-left, low-right, living-rug, cutaway and 390×844 captures
+  using the actual production room module. Also inspected the normal in-game
+  mobile view; the stand-alone captures use inspection lighting, not the park.
+- Three-client local online regression passed again: indoor peers, outside car,
+  chat, failed download/retry, reconnect, map travel and repeated entry/exit.
+- Desktop and 390×844 touch-emulated action suite passed again: 1,000-button
+  Punch/Interact bursts, 100 key presses, mobile's 100 actual browser touch taps,
+  20 home transitions per viewport, chat and subsequent movement. No uncaught
+  page/game errors, disabled party loop or WebGL context losses in this run.
+
+These remain bounded Chrome tests, not physical iPhone/Android certification.
+Use `node qa/housing-layout-browser.cjs` for repeatable close-view captures.
