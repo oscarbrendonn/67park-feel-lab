@@ -21,10 +21,10 @@ const LIVE=process.env.SOCIAL_LIVE==='1';
   for(const v of [[480,20.555,502],[target[0],20.555,502],target]){await p.evaluate(v=>__tp(v),v);await p.waitForTimeout(250);}
   await p.waitForTimeout(450);console.log('NEAR',spot,await p.evaluate(()=>({p:__eggyInput.playerRef.body.translation(),hint:document.querySelector('#park-home-hint').textContent})));
  }
- async function poses(p){return p.evaluate(()=>{const rows=[];__islandWorld.scene.traverse(o=>{if(o.userData.homePose?.active)rows.push({pose:o.userData.homePose,p:o.position.toArray(),name:o.name});});return rows;});}
+ async function poses(p){return p.evaluate(async()=>{const {Vector3}=await import('three'),rows=[];__islandWorld.scene.traverse(o=>{if(o.userData.homePose?.active){const legs=[];o.traverse(b=>{if(b.isBone&&/^Thigh[LR](?:_\d+)?$/.test(b.name)){const knee=b.children.find(n=>n.isBone&&/^Shin/.test(n.name)),foot=knee?.children.find(n=>n.isBone&&/^Toe/.test(n.name));if(knee&&foot){const a=b.getWorldPosition(new Vector3()),k=knee.getWorldPosition(new Vector3()),f=foot.getWorldPosition(new Vector3());legs.push({forward:k.z-a.z,down:k.y-f.y,side:Math.abs(k.x-a.x)});}}});rows.push({pose:o.userData.homePose,p:o.position.toArray(),name:o.name,legs});}});return rows;});}
  async function detail(p,kind){
-  await p.evaluate(kind=>{const w=__islandWorld,s=w.scene,old=s.onBeforeRender;window.__restoreHomeView=()=>s.onBeforeRender=old;s.onBeforeRender=function(...args){old.apply(this,args);const c=args[2];c.position.set(...(kind==='sofa'?[477,22.8,502]:[481.5,23.5,496]));c.lookAt(...(kind==='sofa'?[475.5,21.3,497.9]:[484.55,21,496.9]));c.updateMatrixWorld();};},kind);
-  await p.waitForTimeout(150);await p.screenshot({path:OUT+'/home-social-'+kind+'-detail.png'});await p.evaluate(()=>__restoreHomeView());
+  await p.evaluate(kind=>{const w=__islandWorld,s=w.scene,old=s.onBeforeRender;window.__restoreHomeView=()=>s.onBeforeRender=old;s.onBeforeRender=function(...args){old.apply(this,args);const c=args[2];c.position.set(...(kind==='sofa'?[477,22.8,502]:[480.5,26.5,502.5]));c.lookAt(...(kind==='sofa'?[475.5,21.3,497.9]:[484.55,20.8,496.6]));c.updateMatrixWorld();};},kind);
+  await p.waitForTimeout(150);await p.screenshot({path:OUT+'/home-social-'+kind+'-detail-'+(p.viewportSize().width<600?'mobile':'desktop')+'.png'});await p.evaluate(()=>__restoreHomeView());
  }
  try{
   a=await player(false,'goril');b=await player(true,'friendsie_1');console.log('READY');
@@ -44,21 +44,29 @@ const LIVE=process.env.SOCIAL_LIVE==='1';
   await near(a,'sofa-left');await a.keyboard.press('KeyE');await wait(a,()=>__parkHousing.debug().rest==='sofa-left');await a.waitForTimeout(500);
   await near(b,'sofa-right');await b.locator('#park-home-hint').tap();await wait(b,()=>__parkHousing.debug().rest==='sofa-right');await b.waitForTimeout(900);
   assert.equal((await poses(a)).filter(r=>r.pose.pose==='sit').length,2);assert.equal((await poses(b)).filter(r=>r.pose.pose==='sit').length,2);
+  for(const p of [a,b])for(const r of await poses(p))for(const leg of r.legs){assert(leg.forward>.03&&leg.forward>leg.side*3,'every avatar and costume knee bends forward');assert(leg.down>.03,'feet hang below knees');}
   await a.screenshot({path:OUT+'/home-social-sofa-desktop.png'});console.log('SOFA BOTH CLIENTS',JSON.stringify(await poses(a)));
   await detail(a,'sofa');
   await b.getByRole('button',{name:'Jump',exact:true}).tap();await wait(b,()=>!__parkHousing.debug().rest);await b.waitForTimeout(130);
   const jump=await b.evaluate(()=>__eggyInput.playerRef.body.translation().y);assert(jump>20.7,'touch jump immediately gets up and jumps');await b.waitForTimeout(900);
   await near(b,'bed');await b.locator('#park-home-hint').tap();await wait(b,()=>__parkHousing.debug().rest==='bed');await b.waitForTimeout(800);
   assert((await poses(a)).some(r=>r.pose.pose==='lie'),'remote sees lying pose');await b.screenshot({path:OUT+'/home-social-bed-mobile.png'});
-  console.log('BED BOTH CLIENTS',JSON.stringify(await poses(b)));
-  await detail(b,'bed');
   await a.keyboard.down('KeyW');await a.waitForTimeout(450);await a.keyboard.up('KeyW');assert.equal(await a.evaluate(()=>__parkHousing.debug().rest),null);
+  await near(a,'bed-right');await a.keyboard.press('KeyE');await wait(a,()=>__parkHousing.debug().rest==='bed-right');await a.waitForTimeout(900);
+  for(const p of [a,b]){
+   const lying=(await poses(p)).filter(r=>r.pose.pose==='lie');assert.equal(lying.length,2,'both sides visible to both players');
+   assert.deepEqual(new Set(lying.map(r=>r.pose.spot)),new Set(['bed','bed-right']));
+  }
+  console.log('TWO BED PLACES BOTH CLIENTS',JSON.stringify(await poses(b)));
+  await detail(a,'bed');await a.screenshot({path:OUT+'/home-social-bed-desktop.png'});await detail(b,'bed');
+  await a.keyboard.press('Space');await wait(a,()=>!__parkHousing.debug().rest);
+  assert.equal(await b.evaluate(()=>__parkHousing.debug().rest),'bed','one player standing does not evict the other');
   if(!LIVE){
    await b.evaluate(()=>__candyOnline.ws.close());await b.waitForTimeout(3500);await wait(b,()=>__candyOnline.data.connected&&__parkHousing.debug().rest==='bed');
    await b.context().setOffline(true);await b.evaluate(()=>__candyOnline.ws.close());await wait(b,()=>!__candyOnline.data.connected);
    await b.locator('#park-home-hint').tap();await wait(b,()=>!__parkHousing.debug().rest&&__parkHousing.debug().standQueued);
    await b.context().setOffline(false);await wait(b,()=>__candyOnline.data.connected&&__parkHousing.debug().model?.rest===null&&!__parkHousing.debug().standQueued);
-   const p=await b.evaluate(()=>__eggyInput.playerRef.body.translation());assert(p.x<483,'offline stand is not undone by a reconnect teleport into the bed');
+   const p=await b.evaluate(()=>__eggyInput.playerRef.body.translation());assert(p.z>498.4,'offline stand is not undone by a reconnect teleport into the bed');
   }else{await b.locator('#park-home-hint').tap();await wait(b,()=>!__parkHousing.debug().rest);}
   // Spam real UI controls, not crafted socket traffic (which the existing
   // anti-abuse server deliberately disconnects). Unit tests cover that layer.

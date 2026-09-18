@@ -229,3 +229,27 @@ HOUSE=H01 node qa/action-stability.cjs
 These are local Chrome/real touch-event emulation checks, not physical iPhone,
 Android, 100-player or global-network certification. Ownership is still an
 ephemeral lobby/session reservation, not a persistent account-owned property.
+
+## Two-person bed and cushion-free sitting — home-social-3
+
+- The same bed now has two server-authoritative, exclusive resting places.
+  A slightly wider mattress and aligned pillows leave separate head/shoulder
+  space. Both stand points are at the clear foot of the bed in all eight homes.
+  The original `bed` id is retained for the left place; `bed-right` is additive.
+- Removed both pink sofa cushions and their material batch. Pelvis anchors sit
+  on the seat at its front edge, with room for knees and feet outside the mesh.
+- Side-view inspection exposed a previous rig-axis error: the gorilla's knees
+  bent sideways. Sitting goals are now derived once from the authored rest rig:
+  thighs forward, shins down and forearms forward. Costume skeleton copies keep
+  their rest twists and bone lengths. No per-frame IK, added library, animation
+  loop, texture, GLB, extra light or shadow map. Existing interruptible 180 ms
+  entry and reduced-motion support remain; standing releases immediately.
+- Two-client local Chrome test passed on desktop and 390x844 touch emulation:
+  both sofa places, forward-knee/down-shin measurements for gorilla and Friends
+  costume copies on both clients, both bed places visible simultaneously,
+  one person standing while the other stays, Jump, reconnect, offline stand,
+  1,000 UI clicks, shared chat and 320/390/844 px dialog bounds. No recorded page
+  or game errors and the render loop continued. Front and bed overview captures
+  were inspected. Physical phone and larger lobby testing are not implied.
+- All 51 focused protocol, pose, geometry, loader, camera, lobby, entry and carry
+  unit/regression checks passed after the final rig-aware pose correction.

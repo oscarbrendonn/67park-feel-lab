@@ -119,6 +119,20 @@ test('all eight rooms have collision-free stand points, and standing escapes aft
  f.hub.message(f.a,{t:'house.stand'});assert.deepEqual(f.a.lastPosition.p,spotPosition(h,s,true));
  f.advance(4000);assert.equal(f.state(f.a).rest,null);assert.equal(f.state(f.a).poses.length,0);
 });
+test('two guests can lie side by side, a taken side is rejected and standing frees only that side',()=>{
+ const f=fixture(),h=HOUSES[0],[left,right]=HOME_SPOTS.filter(s=>s.pose==='lie');
+ assert(left&&right);assert.equal(left.id,'bed');assert.equal(right.id,'bed-right');
+ f.act(f.a,'claim');f.act(f.a,'enter');f.act(f.b,'enter');
+ f.a.lastPosition={p:spotPosition(h,left,true)};assert(f.act(f.a,'rest',{spot:left.id}).ok);
+ f.b.lastPosition={p:spotPosition(h,left,true)};assert(!f.act(f.b,'rest',{spot:left.id}).ok);
+ f.b.lastPosition={p:spotPosition(h,right,true)};assert(f.act(f.b,'rest',{spot:right.id}).ok);
+ for(const p of [f.a,f.b])assert.deepEqual(new Set(f.state(p).poses.map(r=>r.spot)),new Set([left.id,right.id]));
+ assert.equal(f.state(f.b).rest,right.id,'sync preserves the second sleeping place');
+ f.act(f.a,'stand');assert.equal(f.state(f.a).rest,null);assert.equal(f.state(f.b).rest,right.id);
+ assert.deepEqual(f.a.lastPosition.p,spotPosition(h,left,true));
+ f.act(f.b,'stand');f.b.lastPosition={p:spotPosition(h,left,true)};assert(f.act(f.b,'rest',{spot:left.id}).ok);
+ f.act(f.a,'release');assert.deepEqual(f.state(f.b).poses,[]);assert.equal(f.state(f.b).rest,null);
+});
 test('new lobby arrivals refresh the invitation roster and expired invites disappear',()=>{
  const f=fixture();f.act(f.a,'claim');f.act(f.a,'invite',{target:'bob'});f.hub.update();
  const p={id:'dan',name:'Dan',lobbyId:'A',online:{id:'dan'}};f.hub.players.set('dan',p);f.hub.lobbies.get('A').members.add('dan');f.advance(1100);f.hub.update();

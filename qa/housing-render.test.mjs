@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {Scene,PerspectiveCamera,Box3,Vector3,Matrix4} from 'three';
 import {createHousingInterior} from '../app/housing-interior.js';
 import {HOUSES} from '../app/housing-layout.js';
+import {HOME_SPOTS} from '../app/housing-actions.js';
 function fixture(){
  const world={scene:new Scene(),camera:new PerspectiveCamera(),ground:()=>9};
  const room=createHousingInterior(world,{markers:false}),parts=new Map(),matrix=new Matrix4();
@@ -32,6 +33,19 @@ test('both rugs sit completely on one floor finish, not across a material-height
   assert(b.min.z>=floor.min.z&&b.max.z<=floor.max.z,name+' z support');
   assert(Math.abs(b.min.y-floor.max.y)<.00001,name+' lies on floor');
  }
+ room.dispose();
+});
+test('both sitting anchors are supported by the cushion-free sofa and both bed places fit',()=>{
+ const {world,room,parts}=fixture(),seat=parts.get('sofa-seat').box,cover=parts.get('bed-cover').box;
+ const colors=[];world.scene.traverse(o=>{if(o.material?.color)colors.push(o.material.color.getHexString());});
+ assert(!colors.includes('e8bec7'),'removed pink cushions cannot return');
+ for(const s of HOME_SPOTS.filter(s=>s.pose==='sit')){
+  assert(s.x>seat.min.x+.4&&s.x<seat.max.x-.4);assert(s.z>seat.min.z+.35&&s.z<seat.max.z-.05);
+  assert(Math.abs(s.surface-seat.max.y)<1e-6);
+ }
+ const beds=HOME_SPOTS.filter(s=>s.pose==='lie');assert.equal(beds.length,2);
+ assert(beds[1].x-beds[0].x>=1.49,'separate head and shoulder space');
+ for(const s of beds){assert(s.x-.7>=cover.min.x&&s.x+.7<=cover.max.x);assert(Math.abs(s.surface-cover.max.y)<1e-6);}
  room.dispose();
 });
 test('cutaway wall also hides its own door and window in every cottage',()=>{

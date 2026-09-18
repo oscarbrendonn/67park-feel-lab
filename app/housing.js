@@ -1,11 +1,11 @@
-import {HOUSES,houseById,nearDoor,isHousingZone} from './housing-layout.js';
-import {createHousingLoader} from './housing-loader.js?v=home-entry-2';
+import {HOUSES,houseById,nearDoor,isHousingZone} from './housing-layout.js?v=home-social-3';
+import {createHousingLoader} from './housing-loader.js?v=home-entry-3';
 import {createHousingMarkers} from './housing-markers.js?v=home-scene-1';
 import {createHousingScene,ISOLATED_HOME} from './housing-scene.js?v=home-scene-1';
 import {g as input,k as controls,Aa as wardrobe,i as board} from './chunk-G7D6MVRW.js?v=mobile-29';
-import {b as overview} from './chunk-OZ77422N.js?v=home-social-2';
-import {HOME_SPOTS,homeSpot,spotPosition,nearHomeSpot} from './housing-actions.js';
-import {queueHomePose} from './housing-poses.js?v=home-social-2';
+import {b as overview} from './chunk-OZ77422N.js?v=home-social-3';
+import {HOME_SPOTS,homeSpot,spotPosition,nearHomeSpot} from './housing-actions.js?v=home-social-3';
+import {queueHomePose} from './housing-poses.js?v=home-social-3';
 
 export function createHousing({sound=()=>{}}={}){
  let body=null,world=null,interior=null,ws=null,model=null,visit=null,travel=null,pending=null,seq=0,clock=0,nextPoll=0,lastIsland='',beforeBlocked=false,releaseId='',failed=false,exitWhenConnected=false;
@@ -13,7 +13,7 @@ export function createHousing({sound=()=>{}}={}){
  let rest=null,standQueued=false,lastStand=0,bell=null,bellUntil=0,peopleKey='',inboxKey='';
  const isolate=new URLSearchParams(location.search).get('homeScene')!=='legacy';
  const online=()=>window.__candyOnline,position=()=>body?.translation?.();
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./housing.css?v=home-social-2',import.meta.url).href;document.head.append(sheet);
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./housing.css?v=home-social-3',import.meta.url).href;document.head.append(sheet);
  const button=document.createElement('button');button.id='park-home-button';button.type='button';button.textContent='⌂ Homes';button.setAttribute('aria-haspopup','dialog');button.hidden=true;
  const panel=document.createElement('dialog');panel.id='park-homes';panel.setAttribute('aria-labelledby','homes-title');
  panel.innerHTML='<header><div><small>YOUR LITTLE PLACE IN THE PARK</small><h2 id="homes-title">Make yourself at home</h2></div><button type="button" class="home-close" aria-label="Close homes">×</button></header><p>Claim a cottage. Invite your friends over.</p><div id="home-inside" hidden><button type="button" data-home-action="exit">Leave home</button><strong></strong><br><span>Move, jump and chat together.</span></div><div class="home-grid"></div><p id="home-message" role="status" aria-live="polite"></p><small>ONE HOME PER PERSON · THIS LOBBY ONLY</small><p style="font-size:11px;margin:6px 0 0">Your home stays reserved during a short reconnect. Leaving this lobby releases it. A locked door stops new visitors; friends already inside can stay.</p>';

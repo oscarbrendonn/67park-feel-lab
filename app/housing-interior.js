@@ -1,6 +1,6 @@
 import * as T from 'three';
 import {RoundedBoxGeometry} from '../island/utils/RoundedBoxGeometry.js';
-import {HOUSES,inRoom,roomObstacle} from './housing-layout.js';
+import {HOUSES,inRoom,roomObstacle} from './housing-layout.js?v=home-social-3';
 
 // A small, reusable dollhouse interior. No GLB, texture downloads, shadow maps,
 // timers or physics world per house. Only the currently visited room is drawn.
@@ -29,17 +29,16 @@ export function createHousingInterior(world,{markers=true}={}){
  }
  add('#fff5e7',0,.13,-5.84,13.8,.24,.1);
  add('#fff5e7',-6.84,.13,0,.1,.24,11.8);add('#fff5e7',6.84,.13,0,.1,.24,11.8);
- // A mint sofa, rose cushions and a low, rounded coffee table.
- add('#a6c6b8',-4.5,.48,-2.3,3.4,.58,1.3);add('#a6c6b8',-4.5,.99,-2.82,3.4,.72,.28);
+ // Clear mint seats: no decorative cushions intersecting a seated avatar.
+ add('#a6c6b8',-4.5,.48,-2.3,3.4,.58,1.3,'sofa-seat');add('#a6c6b8',-4.5,.99,-2.82,3.4,.72,.28,'sofa-back');
  for(const x of [-6,-3])add('#a6c6b8',x,.81,-2.3,.32,.62,1.3);
- for(const x of [-5.45,-3.55])add('#e8bec7',x,.92,-2.3,.67,.3,.62);
  add('#f7efdf',-4.5,.63,-.25,2.1,.16,1.3);add('#c8ad8e',-4.5,.3,-.25,1.5,.56,.8);
  add('#bed4cb',-4.5,.03,-.2,4.3,.024,4.2,'living-rug');
  add('#d0bddc',-4.85,.76,-.3,.52,.1,.35);add('#f0d996',-4.2,.76,-.18,.3,.16,.3);
  // Bed and side cabinet. Nothing obstructs the path between door and sofa.
- add('#c1ae97',4.55,.25,-3.55,2.6,.42,3.4);add('#faf5e9',4.55,.56,-3.55,2.55,.3,3.35);
- add('#bfcce1',4.55,.75,-3.15,2.55,.16,2.4);add('#e6ccba',4.55,1,-5.1,2.7,1.25,.2);
- for(const x of [3.9,5.2])add('#fff8ed',x,.83,-4.7,1,.2,.65);
+ add('#c1ae97',4.55,.25,-3.55,3.2,.42,3.4,'bed-frame');add('#faf5e9',4.55,.56,-3.55,3.15,.3,3.35,'bed-mattress');
+ add('#bfcce1',4.55,.75,-3.15,3.15,.16,2.4,'bed-cover');add('#e6ccba',4.55,1,-5.1,3.3,1.25,.2,'bed-headboard');
+ for(const x of [3.8,5.3])add('#fff8ed',x,.83,-4.7,1,.2,.65,x<4.55?'bed-pillow-left':'bed-pillow-right');
  add('#dcc8af',2.5,.4,-4.6,.7,.8,.8);add('#f2da9e',2.5,1.15,-4.6,.55,.48,.55);
  // Kitchen, a sage splashback, sink and a window into a pastel sky.
  add('#e5d0b8',3.9,.56,4.75,4.4,1.1,1.2);add('#fff7e9',3.9,1.17,4.75,4.6,.15,1.3,'kitchen-counter');

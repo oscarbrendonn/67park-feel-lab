@@ -26,7 +26,7 @@ export const nearDoor=(h,p)=>Array.isArray(p)&&p.length===3&&p.every(Number.isFi
 export const FURNITURE = Object.freeze([
  {x:-4.5,z:-2.3,hx:1.7,hz:.65,height:1.2},
  {x:-4.5,z:-.25,hx:1.05,hz:.65,height:.6},
- {x:4.55,z:-3.55,hx:1.3,hz:1.7,height:.8},
+ {x:4.55,z:-3.55,hx:1.6,hz:1.7,height:.8},
  {x:3.9,z:4.75,hx:2.2,hz:.6,height:1.15},
 ]);
 export function roomObstacle(h,x,y,z){
