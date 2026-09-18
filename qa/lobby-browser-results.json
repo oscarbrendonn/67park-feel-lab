@@ -1,0 +1,119 @@
+{
+  "date": "2026-09-18",
+  "environment": "macOS Chrome, 16 GB RAM host; mobile emulation 390x844 DPR2; 99 simulated peers plus one real browser; localhost transport",
+  "caveats": [
+    "Not a physical Android or iPhone test.",
+    "No real WAN/tunnel latency measurement.",
+    "Frames below are 30-second samples, not a no-stutter guarantee.",
+    "Visible avatar budget remains 8 mobile / 12 desktop; 100 full-detail avatars are not rendered."
+  ],
+  "desktop": {
+    "done": true,
+    "frames": 1361,
+    "fps": 45.36197926203479,
+    "frameP95": 28.20000000001164,
+    "frameP99": 41.70000000001164,
+    "max": 368,
+    "longTasks": 4,
+    "longTaskMax": 199,
+    "remotes": 99,
+    "render": {
+      "frame": 5595,
+      "calls": 226,
+      "triangles": 3717040,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 664,
+      "textures": 87
+    },
+    "errors": []
+  },
+  "mobile": {
+    "done": true,
+    "fps": 70.79528031470194,
+    "frameP95": 20.89999999999418,
+    "frameP99": 77.69999999999709,
+    "max": 320,
+    "longTasks": 36,
+    "longMax": 192,
+    "remotes": 99,
+    "render": {
+      "frame": 5570,
+      "calls": 170,
+      "triangles": 2321994,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 481,
+      "textures": 66
+    },
+    "errors": []
+  },
+  "mobile4xBeforeUIBatch": {
+    "done": true,
+    "fps": 15.15964269884672,
+    "frameP95": 360.8999999999942,
+    "frameP99": 466.80000000001746,
+    "max": 561.6999999999971,
+    "longTasks": 111,
+    "longMax": 298,
+    "remotes": 99,
+    "render": {
+      "frame": 8119,
+      "calls": 166,
+      "triangles": 2225095,
+      "points": 0,
+      "lines": 0
+    },
+    "errors": []
+  },
+  "mobile4xAfterUIBatch": {
+    "done": true,
+    "fps": 41.20581940670885,
+    "frameP95": 33.900000000001455,
+    "frameP99": 42.099999999998545,
+    "max": 958.8000000000029,
+    "longTasks": 7,
+    "longMax": 510,
+    "remotes": 99,
+    "render": {
+      "frame": 4469,
+      "calls": 166,
+      "triangles": 2299404,
+      "points": 0,
+      "lines": 0
+    },
+    "errors": []
+  },
+  "mobile4xWarm": {
+    "done": true,
+    "fps": 44.331644667520244,
+    "frameP95": 29.40000000000873,
+    "frameP99": 41.80000000000291,
+    "max": 146.39999999999418,
+    "longTasks": 1,
+    "longMax": 112,
+    "remotes": 99,
+    "render": {
+      "frame": 7726,
+      "calls": 161,
+      "triangles": 2121510,
+      "points": 0,
+      "lines": 0
+    },
+    "errors": []
+  },
+  "controls": {
+    "touchJumpHeightMeters": 2.319,
+    "touchJoystickMovedAfterChat": true,
+    "ownChatServerAcknowledged": true,
+    "viewportScaleAfterChat": 1,
+    "reconnectedSameId": true,
+    "remoteCountAfterReconnect": 99,
+    "renderFramesAfterReconnect": 937,
+    "pageErrors": []
+  }
+}

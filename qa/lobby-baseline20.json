@@ -1,0 +1,119 @@
+{
+  "steady100": {
+    "server": {
+      "t": "stats",
+      "seq": 3,
+      "elapsedMs": 20029.137708,
+      "cpuPercent": 62.523325679657866,
+      "rssMB": 153.078125,
+      "heapMB": 42.30522155761719,
+      "lagP95Ms": 86.835199,
+      "lagP99Ms": 122.486783,
+      "lagMaxMs": 276.037631,
+      "sent": 1954867,
+      "bytes": 329785778,
+      "dropped": 0,
+      "maxBuffered": 0,
+      "types": {
+        "island.world": 19600,
+        "s": 1874367,
+        "pong": 900,
+        "chat": 60000
+      },
+      "faults": 0,
+      "lobbies": [
+        {
+          "members": 100,
+          "code": "9C2DDB9F86"
+        }
+      ],
+      "players": 100,
+      "online": 100
+    },
+    "pingMs": {
+      "n": 900,
+      "p50": 42,
+      "p95": 110,
+      "p99": 111,
+      "max": 111
+    },
+    "received": 1954867,
+    "inBytes": 329785778,
+    "errors": [],
+    "closed": []
+  },
+  "reconnectHTTP": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    429,
+    429,
+    429,
+    429,
+    429
+  ],
+  "afterReconnect": {
+    "server": {
+      "t": "stats",
+      "seq": 5,
+      "elapsedMs": 10024.582583000003,
+      "cpuPercent": 55.60762210142589,
+      "rssMB": 138.734375,
+      "heapMB": 69.50080871582031,
+      "lagP95Ms": 74.186751,
+      "lagP99Ms": 95.158271,
+      "lagMaxMs": 130.220031,
+      "sent": 913974,
+      "bytes": 155490488,
+      "dropped": 0,
+      "maxBuffered": 0,
+      "types": {
+        "s": 877114,
+        "island.world": 9405,
+        "chat": 27075,
+        "pong": 380
+      },
+      "faults": 0,
+      "lobbies": [
+        {
+          "members": 100,
+          "code": "9C2DDB9F86"
+        }
+      ],
+      "players": 100,
+      "online": 95
+    },
+    "pingMs": {
+      "n": 380,
+      "p50": 32,
+      "p95": 62,
+      "p99": 64,
+      "max": 64
+    },
+    "received": 913974,
+    "inBytes": 155490488,
+    "errors": [],
+    "closed": []
+  },
+  "final": {
+    "errors": [],
+    "closed": []
+  }
+}

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f4eee3"><title>Haritayı gez · Kimi Island · 67Park</title><link rel="icon" href="/67park-feel-lab/brand/67park-logo.png"><link rel="stylesheet" href="./explore.css?v=map-gestures-2"><script type="importmap">{"imports":{"three":"/67park-feel-lab/vendor/three.module.js","three/addons/":"/67park-feel-lab/vendor/addons/","three/examples/jsm/":"/67park-feel-lab/vendor/addons/"}}</script></head>
+<body data-island="kimi">
+ <canvas id="map" aria-label="Serbest gezinme haritası" tabindex="0"></canvas>
+ <header><img src="/67park-feel-lab/brand/67park-logo.png" alt="67Park"><div><strong>Haritayı gez</strong><small>Kimi Island · Serbest kamera</small></div><a href="/67park-feel-lab/">Oyuna dön <span aria-hidden="true">↗</span></a></header>
+ <nav aria-label="Kamera konumu"><button id="overview" disabled>Adanın tamamı</button><button id="street" disabled>Sokak seviyesi</button><button id="help-toggle" aria-label="Kontrolleri göster" aria-expanded="false">?</button></nav>
+ <aside id="help" hidden>Kuş bakışında: tek parmakla haritayı kaydır, iki parmağını açıp kapatarak yakınlaştır veya uzaklaştır. Bilgisayarda sürükle ve fare tekerleğini kullan.<br>Sokak seviyesinde: joystick / WASD ile ilerle, sürükleyerek etrafına bak. Oklarla veya E / Q ile yüksel–alçal; Shift ile hızlan.</aside>
+ <section id="loading" role="status" aria-live="polite"><div><span class="loading-mark" aria-hidden="true"></span><h1>Adan hazırlanıyor</h1><p id="stage">Harita açılıyor…</p><progress id="progress" max="1" value="0"></progress><small>Oyundaki gerçek modeller yükleniyor.</small><button id="retry" hidden>Yeniden dene</button></div></section>
+ <div id="controls" hidden>
+  <div id="stick" role="group" aria-label="Kamera hareket joystick'i"><span class="stick-ring"></span><span id="knob" aria-hidden="true">✥</span></div>
+  <div class="altitude"><button id="up" aria-label="Yüksel">↑<small>Yüksel</small></button><button id="down" aria-label="Alçal">↓<small>Alçal</small></button></div>
+  <div id="map-zoom" role="group" aria-label="Harita yakınlığı" hidden><button id="zoom-in" aria-label="Haritayı yakınlaştır">+</button><button id="zoom-out" aria-label="Haritayı uzaklaştır">−</button></div>
+  <button id="fast" aria-label="Hızlı gezin" aria-pressed="false">Hızlı</button>
+  <p class="hint">Sürükle ve etrafına bak</p>
+ </div>
+ <script type="module" src="./explore.js?v=vehicle-48"></script>
+<script type="module" src="/67park-feel-lab/app/github-preview-notice.js?v=release-40b"></script></body></html>

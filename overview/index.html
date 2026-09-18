@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Island overview · 67Park</title>
+<style>
+body{margin:0;padding:24px;background:#f0e9df;color:#34383b;font:16px system-ui;text-align:center}main{max-width:960px;margin:auto}h1{font-size:28px}nav{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin:20px 0}a{color:#244c43;background:#c2dfc8;padding:14px 22px;border-radius:22px;font-weight:700;text-decoration:none}img{display:block;width:100%;max-width:640px;height:auto;margin:auto;border-radius:20px;box-shadow:0 8px 32px #66544420}p{line-height:1.6}small{opacity:.75}
+</style>
+<main>
+<h1 id="title">67Park · Island overview</h1>
+<p>The current Kimi game, with a different authored Island.</p>
+<nav><a href="/67park-feel-lab/">Play with friends</a><a href="/67park-feel-lab/?view=overview">Open live bird's-eye view</a></nav>
+<img src="/67park-feel-lab/overview/island.jpg" alt="Actual bird's-eye screenshot of this release's Island" width="462" height="1024">
+<p><small>Captured from the playable build. Temporary link: the game server and computer must stay running.</small></p>
+</main>
+<script type="module">
+try{const m=await(await fetch('/67park-feel-lab/integration-manifest.json')).json();const label=m.variant==='codex'?'Codex Island':'Kimi Island';document.title=label+' · 67Park';document.getElementById('title').textContent='67Park · '+label;}catch{}
+</script>
+</html>

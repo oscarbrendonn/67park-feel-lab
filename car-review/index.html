@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>67Park · Car preview</title>
+<script type="importmap">{"imports":{"three":"/67park-feel-lab/vendor/three.module.js","three/addons/":"/67park-feel-lab/vendor/addons/"}}</script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eae2d9;color:#3c4d4d;font:15px system-ui,sans-serif}canvas{display:block;width:100%;height:100dvh;touch-action:none}header{position:fixed;top:18px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between;gap:18px;pointer-events:none}header img{width:99px}header a{pointer-events:auto;background:#fffaf0df;border:1px solid #fff;padding:11px 18px;border-radius:22px;color:inherit;text-decoration:none;box-shadow:0 3px 14px #67584c12}.panel{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(660px,calc(100% - 24px));padding:15px 18px;background:#fffaf1ee;border:1px solid #fff;border-radius:24px;box-shadow:0 7px 24px #594b3920}h1{font-size:19px;margin:0 0 5px}p{margin:4px 0 11px;font-size:13px;color:#677575}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}button{border:1px solid #d5ded6;background:#fbfaf5;color:inherit;border-radius:14px;padding:10px 14px;font:600 13px system-ui;cursor:pointer}button[aria-pressed=true]{background:#b7e3d4;border-color:#86beab}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #238a93;outline-offset:3px}.sep{width:1px;height:24px;background:#d7d5cd;margin:0 2px}label{display:flex;align-items:center;gap:7px;font-size:12px}input{max-width:95px;accent-color:#4ea6a3}#status{font-size:11px;margin-top:9px;min-height:14px;color:#71807a}#download a{display:inline-block;margin-top:5px;color:#277373;font-size:12px}#error{position:fixed;inset:80px 20px auto;color:#922;white-space:pre-wrap}@media(max-width:600px){header{top:14px;left:16px;right:16px}.panel{padding:13px}.row{gap:6px}button{padding:9px 11px}h1{font-size:17px}.sep{display:none}p{font-size:12px}}
+</style>
+<header><img src="/67park-feel-lab/brand/67park-logo.png" alt="67Park"><a href="/67park-feel-lab/">Enter the park</a></header>
+<section class="panel" aria-label="Car model preview">
+<h1>A little more character.</h1><p>Actual 3D vehicle · Drag to rotate · Fixed distance. Preview lighting only; the park is unchanged.</p>
+<div class="row" role="group" aria-label="Car appearance">
+<button id="updated" aria-pressed="true">Updated car</button><button id="original" aria-pressed="false">Previous car</button><span class="sep"></span>
+<button data-view="three">3/4</button><button data-view="front">Front</button><button data-view="side">Side</button><button data-view="rear">Rear</button>
+<label>Steering <input id="steer" aria-label="Steering angle" type="range" min="-0.45" max="0.45" step="0.01" value="0"></label>
+<button id="capture">Save image</button>
+</div><div id="status" role="status">Loading the vehicle…</div><div id="download"></div></section>
+<pre id="error" role="alert"></pre>
+<script type="module">
+import * as T from 'three';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {createCandyVehicle110} from '/67park-feel-lab/island/candy-vehicle-model-v110.js';
+import {useParkingBody} from '/67park-feel-lab/app/parking-car-body.js';
+import {useReferenceCarBody} from '/67park-feel-lab/app/reference-car-body.js?v=release-40';
+const $=s=>document.querySelector(s),status=$('#status');
+try {
+const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.AgXToneMapping;renderer.toneMappingExposure=1.12;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
+renderer.domElement.setAttribute('aria-label','Interactive 3D car model');document.body.prepend(renderer.domElement);
+const scene=new T.Scene();scene.background=new T.Color('#eae2d9');
+const pmrem=new T.PMREMGenerator(renderer),room=new RoomEnvironment(),env=pmrem.fromScene(room,.04);scene.environment=env.texture;scene.environmentIntensity=.65;room.dispose();pmrem.dispose();
+scene.add(new T.HemisphereLight('#fff4e4','#b6a99c',.6));
+const sun=new T.DirectionalLight('#fff2dd',3);sun.position.set(-5,8,5);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:1,far:25});sun.shadow.bias=-.0001;sun.shadow.normalBias=.014;sun.shadow.radius=4;scene.add(sun);
+const floor=new T.Mesh(new T.PlaneGeometry(100,100),new T.MeshStandardMaterial({color:'#d9cabc',roughness:.89}));floor.rotation.x=-Math.PI/2;floor.position.y=-.012;floor.receiveShadow=true;scene.add(floor);
+const camera=new T.PerspectiveCamera(36,innerWidth/innerHeight,.1,120);camera.position.set(6,3.8,8.8);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,.95,0);controls.enableZoom=false;controls.enablePan=false;controls.minPolarAngle=.45;controls.maxPolarAngle=Math.PI*.48;controls.update();
+let car,mode='updated',view='three';
+const views={three:[6,3.8,8.8],front:[0,2.5,10.6],side:[10.6,2.6,0],rear:[0,2.5,-10.6]};
+function render(){renderer.render(scene,camera);}
+function resize(){camera.aspect=innerWidth/innerHeight;camera.fov=innerWidth<600?47:36;camera.setViewOffset(innerWidth,innerHeight,0,innerWidth<600?110:65,innerWidth,innerHeight);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);render();}
+function choose(next){
+if(car)car.dispose();mode=next;
+const base=createCandyVehicle110({id:'main-mint',color:'#8ebfb5'});
+car=next==='updated'?useReferenceCarBody(base):useParkingBody(base);scene.add(car.group);
+car.animate(0,Number($('#steer').value));car.group.updateMatrixWorld(true);renderer.shadowMap.needsUpdate=true;
+$('#updated').setAttribute('aria-pressed',String(next==='updated'));$('#original').setAttribute('aria-pressed',String(next==='original'));
+status.textContent=(next==='updated'?'Updated':'Previous')+' · '+car.stats.triangles.toLocaleString()+' triangles · '+car.stats.draws+' draw calls · 4 original seat anchors';
+renderer.domElement.dataset.carPreview=JSON.stringify({mode:next,style:car.style,triangles:car.stats.triangles,draws:car.stats.draws,capacity:car.capacity});render();
+}
+$('#updated').onclick=()=>choose('updated');$('#original').onclick=()=>choose('original');
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;camera.position.fromArray(views[view]);controls.update();render();});
+$('#steer').oninput=()=>{car.animate(0,Number($('#steer').value));renderer.shadowMap.needsUpdate=true;render();};
+controls.addEventListener('change',render);addEventListener('resize',resize);
+$('#capture').onclick=()=>{render();renderer.domElement.toBlob(blob=>{if(!blob)return;const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='67park-car-'+mode+'-'+view+'.png';a.textContent='Download '+a.download;$('#download').replaceChildren(a);},'image/png');};
+choose('updated');resize();
+addEventListener('pagehide',()=>{car.dispose();controls.dispose();env.dispose();floor.geometry.dispose();floor.material.dispose();renderer.dispose();},{once:true});
+}catch(error){$('#error').textContent=String(error.stack||error);status.textContent='The preview could not load.';throw error;}
+</script>
+</html>

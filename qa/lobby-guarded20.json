@@ -1,0 +1,122 @@
+{
+  "steady100": {
+    "server": {
+      "t": "stats",
+      "seq": 3,
+      "elapsedMs": 20001.249084000003,
+      "cpuPercent": 28.823629843257038,
+      "rssMB": 289.40625,
+      "heapMB": 89.4740219116211,
+      "lagP95Ms": 28.377087,
+      "lagP99Ms": 48.791551,
+      "lagMaxMs": 147.193855,
+      "sent": 562703,
+      "bytes": 107685267,
+      "dropped": 0,
+      "maxBuffered": 0,
+      "types": {
+        "island.world": 26200,
+        "s": 475603,
+        "pong": 900,
+        "chat": 60000
+      },
+      "faults": 0,
+      "lobbies": [
+        {
+          "members": 100,
+          "code": "29D80498A1"
+        }
+      ],
+      "players": 100,
+      "online": 100
+    },
+    "pingMs": {
+      "n": 900,
+      "p50": 13,
+      "p95": 63,
+      "p99": 63,
+      "max": 63
+    },
+    "received": 562703,
+    "inBytes": 107685267,
+    "errors": [],
+    "closed": []
+  },
+  "reconnectHTTP": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "afterReconnect": {
+    "server": {
+      "t": "stats",
+      "seq": 5,
+      "elapsedMs": 10000.616666000002,
+      "cpuPercent": 28.43417656100768,
+      "rssMB": 144.453125,
+      "heapMB": 93.85076141357422,
+      "lagP95Ms": 29.884415,
+      "lagP99Ms": 47.874047,
+      "lagMaxMs": 150.077439,
+      "sent": 287425,
+      "bytes": 60150356,
+      "dropped": 0,
+      "maxBuffered": 0,
+      "types": {
+        "s": 233925,
+        "island.world": 12700,
+        "welcome": 100,
+        "state": 100,
+        "social": 100,
+        "chat": 40000,
+        "pong": 500
+      },
+      "faults": 0,
+      "lobbies": [
+        {
+          "members": 100,
+          "code": "29D80498A1"
+        }
+      ],
+      "players": 100,
+      "online": 100
+    },
+    "pingMs": {
+      "n": 500,
+      "p50": 10,
+      "p95": 20,
+      "p99": 22,
+      "max": 23
+    },
+    "received": 287425,
+    "inBytes": 60150356,
+    "errors": [],
+    "closed": []
+  },
+  "final": {
+    "errors": [],
+    "closed": []
+  }
+}

@@ -1,0 +1,43 @@
+/* Settings use the existing cream / candy palette; no new render loop. */
+#party-settings{z-index:1000;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));box-sizing:border-box;overscroll-behavior:contain;touch-action:pan-y}
+#party-settings [hidden]{display:none!important}
+#party-settings .party-card{width:min(490px,100%);max-height:calc(100dvh - 44px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;padding:20px 22px;background:#fffaf1;border:2px solid #fff;border-radius:28px;box-shadow:0 8px 0 #c8bcb385,0 18px 60px #45333a40;scrollbar-width:thin;scrollbar-color:#d5c6bf transparent}
+#party-settings .party-head{position:sticky;top:-20px;background:#fffaf1;z-index:2;padding:6px 0 10px;border-bottom:1px solid #e8ded0}
+#party-settings h2{margin:2px 0 0;font-size:25px;letter-spacing:-.04em;color:#423d46}
+#party-settings small{font-size:10px;letter-spacing:.13em;font-weight:800;color:#8c7e7b}
+#party-settings .party-close{min-width:44px;height:44px;background:linear-gradient(#ffdfea,#f7bdd3);box-shadow:0 3px 0 #d5a3b7;border:2px solid white}
+#party-settings .party-intro{font-size:13px;color:#716872;margin:8px 0 18px}
+#party-settings section{border:1px solid #e6ddcf;background:#ffffff9c;border-radius:19px;padding:12px 14px;margin:12px 0}
+#party-settings section h3{font-size:15px;letter-spacing:-.02em;margin:0 0 10px;color:#514354}
+#party-settings section:nth-of-type(1) h3{color:#3e7ca8}
+#party-settings section:nth-of-type(2) h3{color:#916cb8}
+#party-settings section:nth-of-type(3) h3{color:#49866f}
+#party-settings .party-setting-row{display:grid;grid-template-columns:1fr auto;gap:5px 12px;padding:9px 0;border-top:1px solid #ede6dc;font-size:14px;font-weight:600}
+#party-settings output{color:#81707f;font-size:12px;min-width:38px;text-align:right;font-variant-numeric:tabular-nums}
+#party-settings input[type=range]{grid-column:1/-1;width:100%;margin:0;min-height:32px;accent-color:#e978aa;cursor:pointer;touch-action:pan-y}
+#party-settings .party-row{font-size:14px;border-color:#ede6dc;min-height:44px;padding:4px 0}
+#party-settings .party-toggle{flex:none;width:58px;height:36px}
+#party-settings .party-toggle i{width:26px;height:26px;top:3px;left:3px;transition:transform 120ms ease-out}
+#party-settings .party-toggle[aria-checked=true] i{left:3px;transform:translateX(23px)}
+#party-settings .party-hint{font-size:12px;line-height:1.5;color:#796e74;background:#f5f0e7;padding:9px 11px;margin:7px 0 0;border-radius:12px}
+#party-settings .party-hint p{margin:5px 0 10px}
+#party-settings details{border-top:1px solid #ede6dc}
+#party-settings summary{cursor:pointer;min-height:44px;box-sizing:border-box;padding:12px 0;font-size:14px;font-weight:650}
+#party-settings button:not(.party-toggle):not(.party-close),#party-settings .party-help-actions a{cursor:pointer;background:#fff;border:1px solid #e5d8d0;border-radius:13px;padding:10px 12px;min-height:44px;color:#554b57;font:650 13px system-ui;text-decoration:none;box-sizing:border-box}
+#party-settings .party-reset{width:100%;margin-top:10px;background:#fbedf1!important}
+#party-settings button:active{transform:scale(.97)}
+#party-settings :is(button,input,summary,a,textarea):focus-visible{outline:3px solid #668fb1;outline-offset:3px}
+#party-settings .party-report-label{display:block;margin:12px 0 6px;font-size:12px}
+#party-settings textarea{display:block;box-sizing:border-box;width:100%;resize:vertical;padding:10px;border:1px solid #d8ccc4;border-radius:10px;font:16px/1.4 system-ui;background:#fff;color:#514954}
+#party-settings .party-help-actions{display:flex;flex-wrap:wrap;gap:8px}
+#settings-report-status,#settings-reset-confirm{font-size:12px;line-height:1.5}
+#settings-reset-confirm button{margin:3px}
+html[data-park-show-chat=false] :is(.park-chat-history,#local-speech-bubble,.remote-speech-bubble){display:none!important}
+html[data-park-show-names=false] :is([data-remote-name],.park-player-name){display:none!important}
+/* Scale the whole action layout so both visible targets and hit boxes match. */
+.park-actions,.park-desktop-actions{transform:scale(var(--park-button-scale,1));transform-origin:right bottom}
+.party-eggy{scale:var(--park-button-scale,1);transform-origin:right bottom;bottom:calc(280px * var(--park-button-scale,1) + env(safe-area-inset-bottom,0px))!important}
+#party-throw{right:calc(20px + 88px * var(--park-button-scale,1))}
+@media(max-width:420px){#party-settings .party-card{padding:16px 14px;border-radius:24px}#party-settings .party-head{top:-16px}#party-settings section{padding:10px 12px}}
+@media(max-height:480px){#party-settings .party-card{max-height:calc(100dvh - 24px)}#party-settings .party-intro{margin-bottom:8px}}
+@media(prefers-reduced-motion:reduce){#party-settings *,#party-settings *::before{transition:none!important}}

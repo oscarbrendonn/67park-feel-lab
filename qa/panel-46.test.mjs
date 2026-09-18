@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const root=new URL('../',import.meta.url),read=f=>fs.readFileSync(new URL(f,root),'utf8');
+for(const file of ['index.html','play/index.html'])assert.match(read(file),/friends-panel\.css\?v=friends-white-46/);
+assert.match(read('app/friends-panel-style.js'),/FRIENDS_PANEL_STYLE='friends-white-46'/);
+assert.match(read('app/chunk-A5QZM2VZ.js'),/friends-panel-style\.js\?v=panel-46/);
+const css=read('app/friends-panel.css');assert.match(css,/White HUD family, release 46/);assert.match(css,/prefers-reduced-motion/);
+assert.match(css,/min-height:44px/);assert.match(css,/focus-visible/);
+assert.match(read('app/skybound-card.js'),/skybound-44/);
+console.log('PASS: main and standalone panel load the same versioned white style; focus/touch/reduced motion and Skybound retained');

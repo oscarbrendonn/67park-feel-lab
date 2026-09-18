@@ -1,0 +1,186 @@
+{
+  "join": {
+    "t": "stats",
+    "seq": 1,
+    "elapsedMs": 823.105875,
+    "cpuPercent": 21.98623597480701,
+    "rssMB": 436.953125,
+    "heapMB": 141.7034912109375,
+    "lagP95Ms": 12.050431,
+    "lagP99Ms": 12.337151,
+    "lagMaxMs": 12.730367,
+    "sent": 12033,
+    "bytes": 13425183,
+    "dropped": 0,
+    "maxBuffered": 0,
+    "types": {
+      "welcome": 326,
+      "meta": 5050,
+      "state": 325,
+      "social": 325,
+      "island.world": 1057,
+      "join": 4950
+    },
+    "faults": 0,
+    "lobbies": [
+      {
+        "members": 100,
+        "code": "936568347F"
+      }
+    ],
+    "players": 100,
+    "online": 100
+  },
+  "steady100": {
+    "server": {
+      "t": "stats",
+      "seq": 3,
+      "elapsedMs": 5000.860500000001,
+      "cpuPercent": 24.908393265519003,
+      "rssMB": 378.25,
+      "heapMB": 61.3961181640625,
+      "lagP95Ms": 20.414463,
+      "lagP99Ms": 27.213823,
+      "lagMaxMs": 70.516735,
+      "sent": 137100,
+      "bytes": 26563496,
+      "dropped": 0,
+      "maxBuffered": 0,
+      "types": {
+        "island.world": 7000,
+        "s": 119900,
+        "pong": 200,
+        "chat": 10000
+      },
+      "faults": 0,
+      "lobbies": [
+        {
+          "members": 100,
+          "code": "936568347F"
+        }
+      ],
+      "players": 100,
+      "online": 100
+    },
+    "pingMs": {
+      "n": 200,
+      "p50": 11,
+      "p95": 16,
+      "p99": 17,
+      "max": 17
+    },
+    "received": 137100,
+    "inBytes": 26563496,
+    "errors": [],
+    "closed": []
+  },
+  "reconnectHTTP": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "afterReconnect": {
+    "server": {
+      "t": "stats",
+      "seq": 5,
+      "elapsedMs": 10000.811208,
+      "cpuPercent": 22.841297095706558,
+      "rssMB": 374.46875,
+      "heapMB": 45.995079040527344,
+      "lagP95Ms": 19.873791,
+      "lagP99Ms": 36.241407,
+      "lagMaxMs": 49.938431,
+      "sent": 293391,
+      "bytes": 61663680,
+      "dropped": 0,
+      "maxBuffered": 0,
+      "types": {
+        "island.world": 14000,
+        "welcome": 100,
+        "state": 100,
+        "social": 100,
+        "s": 238591,
+        "chat": 40000,
+        "pong": 500
+      },
+      "faults": 0,
+      "lobbies": [
+        {
+          "members": 100,
+          "code": "936568347F"
+        }
+      ],
+      "players": 100,
+      "online": 100
+    },
+    "pingMs": {
+      "n": 500,
+      "p50": 8,
+      "p95": 16,
+      "p99": 18,
+      "max": 18
+    },
+    "received": 293391,
+    "inBytes": 61663680,
+    "errors": [],
+    "closed": []
+  },
+  "minigames": [
+    {
+      "mode": "balloon",
+      "players": 2,
+      "status": "playing",
+      "snapshotAdvanceMs": 2038
+    },
+    {
+      "mode": "basket",
+      "players": 2,
+      "status": "playing",
+      "snapshotAdvanceMs": 2016
+    },
+    {
+      "mode": "penalty",
+      "players": 2,
+      "status": "playing",
+      "snapshotAdvanceMs": 2028
+    },
+    {
+      "mode": "race",
+      "players": 2,
+      "status": "playing",
+      "snapshotAdvanceMs": 1994
+    },
+    {
+      "mode": "rockets",
+      "players": 4,
+      "status": "playing",
+      "snapshotAdvanceMs": 1985
+    }
+  ],
+  "final": {
+    "errors": [],
+    "closed": []
+  }
+}

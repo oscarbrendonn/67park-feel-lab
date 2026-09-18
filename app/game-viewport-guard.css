@@ -1,0 +1,15 @@
+/* These are game gestures. `manipulation` still permits native pinch zoom.
+   Do not disable accessibility zoom globally or change the camera's own zoom. */
+body:has(.park-hud):not(:has(.wardrobe)) :is(canvas,.park-stick,.park-action,#preview-hit,.park-toolbar,.park-weather,#hawk-map-navigation,.park-chat>button,.online-toggle){
+ touch-action:none!important;
+ -webkit-user-select:none;
+ user-select:none;
+ -webkit-touch-callout:none;
+}
+/* Standalone mini-games use their own HTML entry, not the park HUD. */
+body:has(.sp-controls,.rr-controls,.cr-pad,#touch-ui) :is(canvas,.sp-controls,.rr-controls,.cr-pad,.cr-tools,.cr-jump,#touch-ui){
+ touch-action:none!important;
+ -webkit-user-select:none;
+ user-select:none;
+ -webkit-touch-callout:none;
+}
