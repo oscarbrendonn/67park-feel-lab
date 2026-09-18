@@ -2,7 +2,7 @@
 export function createPartyAudio({settings, saveSettings, gameMuted, host = window}) {
   let ctx, master, compressor, noise, blocked = false;
   const voices = new Set(), last = new Map(), counts = {};
-  const limits = {step: 90, jump: 140, double: 140, land: 100, swing: 150, hit: 100, pad: 250, grab: 150, throw: 150, click: 60, stars: 350, note:80, bell:1800};
+  const limits = {step: 90, jump: 140, double: 140, land: 100, 'skate-ollie':110, 'skate-flip':140, 'skate-land':100, swing: 150, hit: 100, pad: 250, grab: 150, throw: 150, click: 60, stars: 350, note:80, bell:1800};
   const audible = () => ctx?.state === 'running' && !host.document.hidden && !blocked && !gameMuted() && settings.sfx > 0;
   const volume = () => {
     if (ctx && master) master.gain.setTargetAtTime(audible() ? Math.min(1, Math.max(0, Number(settings.sfx) || 0)) * 0.65 : 0, ctx.currentTime, 0.025);
@@ -71,6 +71,24 @@ export function createPartyAudio({settings, saveSettings, gameMuted, host = wind
       voice({noiseBand:'lowpass', from:hard ? 750 : 450, duration:hard ? 0.14 : 0.09, gain:hard ? 0.25 : 0.15, pitch:p});
       voice({from:hard ? 155 : 100, to:45, duration:0.13, gain:hard ? 0.22 : 0.12, pitch:p});
     },
+    'skate-ollie'(_, p) {
+      // Compact wooden tail pop, rather than the walking jump's rising chime.
+      voice({noiseBand:'highpass', from:1450, duration:.045, gain:.20, pitch:p});
+      voice({type:'triangle', from:190, to:68, duration:.075, gain:.14, pitch:p});
+      voice({noiseBand:'bandpass', from:780, duration:.055, delay:.012, gain:.075, pitch:p});
+    },
+    'skate-flip'(_, p) {
+      // Shoe flick followed by a short airy board rotation; landing is separate.
+      voice({noiseBand:'highpass', from:2350, duration:.055, gain:.14, pitch:p});
+      voice({noiseBand:'bandpass', from:1500, duration:.22, delay:.018, gain:.16, pitch:p});
+      voice({type:'triangle', from:370, to:150, duration:.075, gain:.045, pitch:p});
+    },
+    'skate-land'(hard, p) {
+      // Two quick truck/wheel contacts, with a low deck thump underneath.
+      voice({noiseBand:'highpass', from:1100, duration:.06, gain:hard ? .23 : .15, pitch:p});
+      voice({noiseBand:'bandpass', from:850, duration:.065, delay:.028, gain:hard ? .16 : .10, pitch:p});
+      voice({type:'triangle', from:hard ? 150 : 115, to:48, duration:.11, gain:hard ? .20 : .12, pitch:p});
+    },
     swing(_, p) { voice({noiseBand:'bandpass', from:1100, duration:0.15, gain:0.17, pitch:p}); },
     hit(_, p) {
       voice({noiseBand:'lowpass', from:950, duration:0.09, gain:0.28, pitch:p});
@@ -102,6 +120,16 @@ export function createPartyAudio({settings, saveSettings, gameMuted, host = wind
     volume();
     if (host.document.hidden || blocked || gameMuted()) for (const source of voices) { try { source.stop(); } catch {} }
   }
+  // Board mode bypasses the walking controller used by __partyVisual. Listen
+  // to its accepted trick events instead; never add polling or another graph.
+  host.addEventListener('candy:skate-trick', event => {
+    if (event.detail?.trick === 'ollie') play('skate-ollie');
+    else if (event.detail?.trick === 'kickflip') play('skate-flip');
+  });
+  host.addEventListener('candy:skate-land', event => {
+    const p = event.detail;
+    if (p && [p.x, p.y, p.z].every(Number.isFinite)) play('skate-land', p.hard === true);
+  });
   const gesture = () => { ensure(); quiet(); };
   for (const event of ['pointerdown','pointerup','touchend','keydown']) host.addEventListener(event, gesture, {passive:true,capture:true});
   host.document.addEventListener('visibilitychange', quiet);

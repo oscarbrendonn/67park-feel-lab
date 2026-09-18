@@ -11,7 +11,7 @@ import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
 import * as THREE from 'three';
 import {playerSettings as settings,savePlayerSettings as saveSettings} from '../player-settings.js';
 import {installPlayerSettings} from './settings-panel.js';
-import { createPartyAudio } from './party-audio.js?v=home-social-3';
+import { createPartyAudio } from './party-audio.js?v=skate-sfx-1';
 
 const BASE = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
 const CFG = Object.assign({runtime: '', carry: ''}, (typeof window !== 'undefined' && window.__partyConfig) || {});
