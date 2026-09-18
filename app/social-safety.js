@@ -68,18 +68,40 @@ export function installSafetyControls(container){
  details.innerHTML='<summary>Players · mute & block</summary><p class="party-hint">Mute hides someone’s chat and speech bubbles. Block also stops friend requests, invitations and home visits between you. Avatars remain visible. Safety is saved to this guest identity; a different browser or cleared site data creates a different identity.</p><p class="party-hint">Text only. Links and explicit sexual content are filtered. Filters can miss disguised or unfamiliar language; use Block and tell a trusted adult about unsafe contact.</p><div data-safety-list></div>';
  container.append(details);
  const list=details.querySelector('[data-safety-list]');
+ const rows=new Map();let signature='';
+ const empty=document.createElement('p');empty.className='party-hint';empty.textContent='Other players will appear here when they join your lobby.';
  function render(){
   if(!details.open)return;
   const online=globalThis.__candyOnline?.data,me=online?.me?.id||globalThis.__eggyNet?.id;
   const players=new Map((online?.island?.players||[]).filter(p=>p.id!==me).map(p=>[p.id,p]));
   for(const id of [...state.blocked,...state.muted])if(!players.has(id))players.set(id,{id,name:state.names[id]||'Saved player'});
-  list.replaceChildren();
-  if(!players.size){const p=document.createElement('p');p.className='party-hint';p.textContent='Other players will appear here when they join your lobby.';list.append(p);}
+  const next=JSON.stringify([...players.values()].map(p=>[p.id,p.name,state.muted.has(p.id),state.blocked.has(p.id),state.pending.has('muted:'+p.id),state.pending.has('blocked:'+p.id)]));
+  if(next===signature)return;signature=next;
+  // Keep the same DOM targets across polling and acknowledgements. Replacing
+  // the whole list can detach a button between pointerdown and pointerup,
+  // especially on slow phones, and also drops keyboard/screen-reader focus.
+  for(const [id,row]of rows)if(!players.has(id)){row.element.remove();rows.delete(id);}
+  if(!players.size){if(!empty.isConnected)list.append(empty);return;}
+  empty.remove();let index=0;
   for(const p of players.values()){
-   const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid #443f4914';
-   const label=document.createElement('span');label.textContent=p.name||'Guest';label.style.cssText='flex:1;min-width:85px;overflow-wrap:anywhere';row.append(label);
-   for(const kind of ['muted','blocked']){const b=document.createElement('button');b.type='button';const active=state[kind].has(p.id);b.textContent=kind==='muted'?(active?'Unmute':'Mute'):(active?'Unblock':'Block');b.setAttribute('aria-label',b.textContent+' '+(p.name||'Guest'));b.dataset.safety=kind;b.dataset.player=p.id;b.setAttribute('aria-pressed',String(active));b.disabled=state.pending.has(kind+':'+p.id);b.style.cssText='min-height:44px;padding:8px 12px;border:1px solid #ddcfbf;border-radius:14px;background:'+(active?'#f8d9e5':'#fffaf1')+';color:#443b49;font:600 14px system-ui';b.onclick=()=>{setPlayerSafety(kind,p.id,!active,p.name);render();};row.append(b);}
-   list.append(row);
+   let row=rows.get(p.id);
+   if(!row){
+    const element=document.createElement('div');element.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid #443f4914';
+    const label=document.createElement('span');label.style.cssText='flex:1;min-width:85px;overflow-wrap:anywhere';element.append(label);
+    row={element,label,buttons:{},name:''};rows.set(p.id,row);
+    for(const kind of ['muted','blocked']){
+     const b=document.createElement('button');b.type='button';b.dataset.safety=kind;b.dataset.player=p.id;
+     b.style.cssText='min-height:44px;min-width:78px;padding:8px 12px;border:1px solid #ddcfbf;border-radius:14px;color:#443b49;font:600 14px system-ui';
+     b.onclick=()=>{setPlayerSafety(kind,p.id,!state[kind].has(p.id),row.name);render();};row.buttons[kind]=b;element.append(b);
+    }
+   }
+   row.name=p.name||'Guest';if(row.label.textContent!==row.name)row.label.textContent=row.name;
+   for(const kind of ['muted','blocked']){
+    const b=row.buttons[kind],active=state[kind].has(p.id),text=kind==='muted'?(active?'Unmute':'Mute'):(active?'Unblock':'Block');
+    if(b.textContent!==text)b.textContent=text;
+    b.setAttribute('aria-label',text+' '+row.name);b.setAttribute('aria-pressed',String(active));b.disabled=state.pending.has(kind+':'+p.id);b.style.background=active?'#f8d9e5':'#fffaf1';
+   }
+   if(list.children[index]!==row.element)list.insertBefore(row.element,list.children[index]||null);index++;
   }
  }
  let timer;details.addEventListener('toggle',()=>{clearInterval(timer);if(details.open){render();timer=setInterval(()=>{if(!container.closest('[hidden]')){for(const ws of state.sockets)if(ws.channel==='online'&&ws.ws.readyState===1)ws.ws.send(JSON.stringify({t:'safety.sync'}));}},5000);}});

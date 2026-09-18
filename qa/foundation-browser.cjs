@@ -78,8 +78,10 @@ async function run(mobile){
    await page.evaluate(async()=>{const {submitParkChat}=await import('./app/chat-submit.js?v=foundation-safety-1');for(let i=0;i<1000;i++)submitParkChat(__eggyNet,'Repeated input',()=>{});});
   });
   await page.locator('#party-settings-btn').click();await page.getByText('Players · mute & block',{exact:true}).click();
+  const stableBlock=await page.locator(`[data-safety=blocked][data-player="${friend.id}"]`).elementHandle();
   await page.locator(`[data-safety=muted][data-player="${friend.id}"]`).click();
   await page.waitForFunction(id=>JSON.parse(localStorage.getItem('67park.feel-lab.safety.v1')).muted.includes(id),friend.id);
+  assert(await page.evaluate(button=>{for(let i=0;i<100;i++)dispatchEvent(new Event('park:safety-change'));return button.isConnected&&button===document.querySelector(`[data-safety=blocked][data-player="${button.dataset.player}"]`);},stableBlock),'safety sync must preserve button identity and focus target');
   friend.chat('Muted friend message','muted');await sleep(900);assert.equal(await page.evaluate(id=>__eggyNet.chat.some(m=>m.id===id&&m.text==='Muted friend message'),friend.id),false);
   await page.locator(`[data-safety=blocked][data-player="${friend.id}"]`).click();
   await page.waitForFunction(id=>JSON.parse(localStorage.getItem('67park.feel-lab.safety.v1')).blocked.includes(id),friend.id);
