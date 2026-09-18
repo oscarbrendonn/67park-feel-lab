@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const base=process.env.FEEL_URL||'http://127.0.0.1:8497/67park-feel-lab/';
 (async()=>{const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 try{for(const route of ['lane-rush/?v=feel-1','skybound-soft/?claudeQA=passive','rockets/?practice=1&forestQA=1','balloon/?practice=1']){
+ if(process.env.ROUTE&&!route.startsWith(process.env.ROUTE))continue;
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log('ERROR',route,e.message)});
  await page.addInitScript(()=>{localStorage.setItem('67park-feel-lab.character.v3',JSON.stringify({base:'goril'}));localStorage.setItem('67park-feel-lab-muted','1')});
  await page.goto(base+route,{waitUntil:'domcontentloaded',timeout:120000});

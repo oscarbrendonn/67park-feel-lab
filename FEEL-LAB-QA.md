@@ -14,6 +14,10 @@
   error below 0.16 world units, throw release and neutral arm return. After 1,000
   repeated grab button clicks, rendering advanced 28/30 frames in 450 ms.
 - Skybound: mobile-sized entry, movement and airborne jump, shared pitch/FOV.
+- Rockets: countdown completion, camera-relative movement, a quick keyboard
+  jump reaching 1.18 units, and actual touch camera drag, without page errors.
+- Balloon: local bot match and results flow loaded without page errors. This is
+  a smoke check, not exhaustive competitive gameplay or network certification.
 
 ## Limits
 
