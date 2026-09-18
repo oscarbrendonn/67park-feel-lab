@@ -1,0 +1,31 @@
+const {chromium}=require(process.env.PARK_PLAYWRIGHT||'/tmp/rush-test-tools/node_modules/playwright');
+const assert=require('node:assert/strict');
+const base=process.env.FEEL_URL||'http://127.0.0.1:8497/67park-feel-lab/';
+(async()=>{const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+try{for(const mobile of [false,true]){
+ const page=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1280,height:900},isMobile:mobile,hasTouch:mobile});const errors=[];
+ page.on('pageerror',e=>{errors.push(e.stack);console.log('PAGEERROR',e.stack)});
+ await page.addInitScript(base=>{localStorage.setItem('67park-feel-lab.character.v3',JSON.stringify({base}));localStorage.setItem('67park-feel-lab.player-profile.v1',JSON.stringify({version:1,base}));localStorage.setItem('67park-feel-lab-muted','1');window.__stability={frames:0,last:0,maxGap:0,losses:0};const tick=t=>{const s=window.__stability;if(s.last)s.maxGap=Math.max(s.maxGap,t-s.last);s.last=t;s.frames++;requestAnimationFrame(tick)};requestAnimationFrame(tick);document.addEventListener('webglcontextlost',()=>__stability.losses++,true)},process.env.CHARACTER||'goril');
+ await page.goto(base+'?claudeQA=passive',{waitUntil:'domcontentloaded',timeout:120000});
+ await page.waitForFunction(()=>window.__parkHousing?.debug().model&&window.__eggyInput?.playerRef?.body&&!document.querySelector('.wardrobe'),null,{timeout:180000});
+ const read=()=>page.evaluate(async()=>{const {k:controls}=await import('./app/chunk-G7D6MVRW.js?v=mobile-29');return {monitor:{...__stability},render:__islandWorld.renderer.info.render.frame,programs:__islandWorld.renderer.info.programs?.length,p:__eggyInput.playerRef.body.translation(),camera:__islandWorld.camera.position.toArray(),blocked:controls.blocked,house:__parkHousing.debug().visit,errors:[...(__candyErrors||[])],party:__party.status().disabled}});
+ const reset=()=>page.evaluate(()=>{__stability.maxGap=0});
+ async function check(label,fn){await reset();const before=await read();await fn();await page.waitForTimeout(650);const after=await read();console.log('ACTION',JSON.stringify({mobile,label,rendered:after.render-before.render,programDelta:after.programs-before.programs,...after}));assert(after.render-before.render>=4,label+' render stopped');assert(after.monitor.maxGap<2000,label+' long frame stall');assert.equal(after.monitor.losses,0);assert.equal(after.party,false);assert.deepEqual(after.errors,[]);assert.deepEqual(errors,[]);return after;}
+ const house=mobile?'H04':'H03';
+ const send=action=>page.evaluate(({action,house})=>__candyOnline.send({t:'house.'+action,house}),{action,house});
+ await send('claim');await page.waitForFunction(h=>__parkHousing.debug().model.houses.find(q=>q.id===h).owner===__candyOnline.data.me.id,house);
+ if(process.env.SKATE)await page.keyboard.press('KeyV');
+ await check('first door',async()=>{await page.locator('#park-home-button').click();await page.locator(`[data-house=${house}] [data-home-action=door]`).click();await page.waitForFunction(()=>!document.querySelector('#park-homes').open&&__eggyInput.playerRef.body.translation().x<0)});
+ await check('cold enter',async()=>{await page.keyboard.press('KeyE');await page.waitForFunction(h=>__parkHousing.debug().visit===h,house)});
+ await check('indoor move',async()=>{const a=await read();await page.keyboard.down('KeyA');await page.waitForTimeout(450);await page.keyboard.up('KeyA');const b=await read();assert(Math.hypot(b.p.x-a.p.x,b.p.z-a.p.z)>.3)});
+ await page.screenshot({path:'/tmp/67park-feel-lab-2UFlpf/home-fixed-'+mobile+'.png'});
+ if(mobile)await check('100 touch punch taps',async()=>{for(let i=0;i<100;i++)await page.locator('#preview-hit').tap()});
+ await check('100 punch key taps',async()=>{for(let i=0;i<100;i++)await page.keyboard.press('KeyF',{delay:8})});
+ await check('1000 punch buttons',async()=>{await page.evaluate(()=>{for(let i=0;i<1000;i++)document.querySelector('#preview-hit')?.click()})});
+ await check('1000 interact keys',async()=>{await page.evaluate(()=>{for(let i=0;i<1000;i++){dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE',bubbles:true}));dispatchEvent(new KeyboardEvent('keyup',{code:'KeyE',bubbles:true}))}})});
+ await check('20 home transitions',async()=>{for(let i=0;i<10;i++){await send('exit');await page.waitForFunction(()=>!__parkHousing.debug().visit);await page.waitForTimeout(500);await send('enter');await page.waitForFunction(h=>__parkHousing.debug().visit===h,house);await page.waitForTimeout(500)}});
+ await check('chat then homes',async()=>{await page.locator('.park-chat button').last().click();await page.getByPlaceholder('Message everyone…').fill('Home stability');await page.locator('.park-chat button').last().click();await page.getByPlaceholder('Message everyone…').waitFor({state:'hidden'});await page.locator('#park-home-button').click();await page.locator('.home-close').click()});
+ const last=await read();assert.equal(last.blocked,false,'Controls remain blocked after chat/home overlay');
+ await check('after actions move',async()=>{const a=await read();await page.keyboard.down('KeyD');await page.waitForTimeout(450);await page.keyboard.up('KeyD');const b=await read();assert(Math.hypot(b.p.x-a.p.x,b.p.z-a.p.z)>.3)});
+ await send('release');await page.waitForFunction(()=>!__parkHousing.debug().visit);console.log('STABILITY PASS',mobile);await page.close();
+}}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

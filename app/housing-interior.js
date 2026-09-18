@@ -13,11 +13,12 @@ export function createHousingInterior(world){
  // Soft plaster walls with real boundaries; near walls fade out of the way
  // by side visibility, like an open dollhouse, not transparent double surfaces.
  const walls=[];
- const wallMat=new T.MeshStandardMaterial({color:'#f5eadf',roughness:.9});materials.push(wallMat);
+ const wallMat=new T.MeshStandardMaterial({color:'#f5eadf',roughness:.9,emissive:'#f5eadf',emissiveIntensity:.12});materials.push(wallMat);
  const ceilingGeometry=new T.PlaneGeometry(14,12),ceiling=new T.Mesh(ceilingGeometry,wallMat);
  ceiling.rotation.x=Math.PI/2;ceiling.position.y=3.96;root.add(ceiling);
- // Non-shadow-casting fill: keeps avatars readable without new shadow maps.
- const fill=new T.HemisphereLight('#fff6e6','#d5c7b5',1.15);root.add(fill);
+ // Reuse the park lighting. Toggling an additional light with the room changes
+ // shader variants for every visible material and can stall a mobile GPU.
+ // A small material fill keeps the room readable without another scene light.
  for(const [x,z,sx,sz]of [[0,-6,14,.18],[0,6,14,.18],[-7,0,.18,12],[7,0,.18,12]]){
   const mesh=new T.Mesh(geometry,wallMat);mesh.position.set(x,2,z);mesh.scale.set(sx,4,sz);root.add(mesh);walls.push({mesh,x,z});
  }
@@ -48,7 +49,7 @@ export function createHousingInterior(world){
  add('#ead2c0',-5.75,.25,4.65,.65,.5,.65);add('#aac28f',-5.75,.87,4.65,.95,1,.95);
  const mat4=new T.Matrix4();
  for(const [color,rows]of batches){
-  const material=new T.MeshStandardMaterial({color,roughness:.78});materials.push(material);
+  const material=new T.MeshStandardMaterial({color,roughness:.78,emissive:color,emissiveIntensity:.12});materials.push(material);
   const mesh=new T.InstancedMesh(geometry,material,rows.length);
   rows.forEach(([x,y,z,sx,sy,sz],i)=>{mat4.makeScale(sx,sy,sz);mat4.setPosition(x,y,z);mesh.setMatrixAt(i,mat4);});
   mesh.instanceMatrix.needsUpdate=true;mesh.receiveShadow=true;root.add(mesh);

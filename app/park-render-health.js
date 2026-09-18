@@ -3,7 +3,9 @@
 export function installParkRenderHealth({canvas,renderer,ready,mode,win=window,doc=document,now=()=>performance.now()}) {
  let previous=-1,lastAdvance=now(),lost=false,lastError='',panel=null,lastReport='';
  const record=code=>{
-  const data={version:'chat-33',code,mode:mode(),frames:renderer.info.render.frame,
+  let house=null;try{const h=win.__parkHousing?.debug();if(h)house={visit:h.visit,failed:h.failed,pending:h.pending?.action||null}}catch{}
+  const data={version:'home-stability-1',code,mode:mode(),frames:renderer.info.render.frame,
+   house,programs:renderer.info.programs?.length||0,
    contextLost:lost||renderer.getContext().isContextLost(),error:lastError,
    viewport:{width:win.innerWidth,height:win.innerHeight,scale:win.visualViewport?.scale||1}};
   const key=code+':'+data.frames;if(key===lastReport)return;lastReport=key;

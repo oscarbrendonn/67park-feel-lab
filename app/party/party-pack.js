@@ -1,5 +1,5 @@
 import {createParkLaunchers} from "./park-launchers.js?v=1";
-import {createHousing} from '../housing.js?v=homes-1';
+import {createHousing} from '../housing.js?v=home-stability-1';
 import '../chat-send-focus.js?v=homes-1';
 import {createParkSocialToys} from "./park-social-toys.js?v=balloon-lift-2";
 import {installSkateRailFinish} from './skate-rail-finish.js?v=1';

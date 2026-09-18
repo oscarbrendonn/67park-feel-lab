@@ -27,6 +27,36 @@ bounded regression, not proof that freezing is impossible. Car handling and
 basketball/penalty aiming were intentionally not rewritten. Carry IK was
 retained from the original and validated, not newly authored in this fork.
 
+## House-entry stability follow-up — home-stability-1
+
+- Removed the interior-only HemisphereLight. Showing/hiding the room had changed
+  the scene light count and compiled additional shader variants. The room now
+  reuses world lighting with a small emissive fill; no new texture/model downloads.
+- In one cold-entry Chrome baseline, the maximum animation-frame gap was 583 ms
+  and shader programs increased from 206 to 213. After the change, the comparable
+  Gorilla run measured 16.8 ms with 206 programs unchanged; mobile emulation also
+  measured 16.8 ms at entry. These are individual local measurements, not phone
+  performance guarantees or proof of the reported permanent freeze's cause.
+- Gorilla desktop and mobile emulation passed 20 home transitions per run,
+  100 keyboard Punch taps, bursts of 1,000 Punch clicks and 1,000 Interact events,
+  chat followed by Homes, and movement afterward. Cooldowns intentionally reject
+  excess commands; this does not mean 1,000 simultaneous attack animations.
+- Friends `friendsie_1` repeated the same suite at both viewport sizes and passed.
+  Mobile additionally completed 100 browser touch taps on Punch (waiting through
+  the normal cooldown): 5,784 rendered frames, maximum frame gap 66.6 ms in that
+  action. Settings remained hidden during selection/studio and available in play
+  at both sizes after updating the release entry points.
+- The separate two-client housing suite passed all eight houses, guest/locked
+  entry, real chat exchange, reconnect and offline exit. Actual renderer frames
+  advanced; no uncaught page errors were reported.
+- Resource regression: 1,000 show/hide cycles reuse a single interior, add no
+  scene lights/textures, and restore world hooks on disposal. The local stalled-
+  render report now includes house ID, pending action and shader-program count;
+  it sends no diagnostics or chat content to a server.
+- Interiors still share the main scene. Exterior assets are not unloaded on
+  entry. Permanent freezing on the user's physical phone remains un-reproduced;
+  physical iPhone/Android and full-lobby thermal/memory soak remain required.
+
 ## Reproduce
 
 Browser checks require Playwright and Chrome; the scripts currently point to
@@ -39,4 +69,9 @@ node qa/controls-37.test.mjs
 node qa/feel-browser.cjs
 node qa/feel-minigames.cjs
 node qa/feel-carry.cjs
+node --loader ./qa/three-test-loader.mjs --test qa/housing-render.test.mjs
+node --test qa/render-health.test.mjs
+HOUSE_QA_URL=http://127.0.0.1:8497/67park-feel-lab/ node qa/housing-browser.cjs
+node qa/action-stability.cjs
+CHARACTER=friendsie_1 node qa/action-stability.cjs
 ```

@@ -1,5 +1,5 @@
 import {HOUSES,houseById,nearDoor,isHousingZone} from './housing-layout.js';
-import {createHousingInterior} from './housing-interior.js';
+import {createHousingInterior} from './housing-interior.js?v=home-stability-1';
 import {g as input,k as controls,Aa as wardrobe} from './chunk-G7D6MVRW.js?v=mobile-29';
 
 export function createHousing(){

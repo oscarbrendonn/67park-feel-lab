@@ -4,7 +4,7 @@ import{hasChosenCharacter as __hasProfile,rememberCharacter as __rememberProfile
 import{stepWaterJump}from"./water-jump.js?v=water-jump-1";
 import "./lane-rush-panel.js?v=rush-1";
 import {installObstaclePractice} from "./obstacle-practice-entry.js?v=release-40c";
-import{installParkRenderHealth}from"./park-render-health.js?v=chat-33";
+import{installParkRenderHealth}from"./park-render-health.js?v=home-stability-1";
 import{useParkFramePolicy}from"./park-frame-policy.js?v=frame-31";
 import{ignoreGameKey,stopChatKey,focusChatInput,isTextEntry}from"./text-input-guard.js?v=mobile-29";
 import{updateRemoteSpeech,removeRemoteSpeech}from"./remote-speech-bubbles.js?v=chat-27";
