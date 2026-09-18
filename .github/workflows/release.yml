@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   regression:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +33,7 @@ jobs:
         with:
           name: foundation-evidence
           path: .qa-results/
+          include-hidden-files: true
       - name: Stage only public game files
         run: rsync -a --exclude='.git/' --exclude='.github/' --exclude='node_modules/' --exclude='server/' --exclude='qa/' --exclude='data/' --exclude='.qa-results/' --exclude='.pages-stage/' --exclude='package*.json' ./ .pages-stage/
       - uses: actions/upload-pages-artifact@v3
@@ -40,7 +41,7 @@ jobs:
           path: .pages-stage
   deploy:
     needs: regression
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.publish.outputs.page_url }}
