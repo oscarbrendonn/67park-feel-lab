@@ -82,4 +82,5 @@ test('entry release keys invalidate changed modules and guest copy is honest',()
  assert(config,'Party runtime config missing');
  assert(read('app/main.js').includes('claude-gorilla-runtime.js?v='+config[1]+'"'),'Dynamic party runtime must equal main runtime URL');
  assert(read('app/main.js').includes('park-carry.js?v='+config[2]+'"'),'Dynamic carry must equal main carry URL');
+ assert(read('app/preview-network.js').includes("const key='67park.feel-lab.guest.v1.'"),'Feel Lab must not overwrite the protected Kimi guest key on the shared Pages origin');
 });

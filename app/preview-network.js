@@ -1,8 +1,10 @@
 import {PREVIEW_BACKEND,PREVIEW_VARIANT} from './preview-network-config.js?v=foundation-safety-1';
 import {protectParkSocket} from './social-safety.js';
 
-const key='67park.preview.guest.v1.'+PREVIEW_VARIANT;
-const sharedKey=Symbol.for('67park.preview.transport.v1.'+PREVIEW_VARIANT);
+// GitHub Pages repositories share one origin. Do not replace the protected
+// Kimi desktop/mobile previews' guest identity when visiting Feel Lab.
+const key='67park.feel-lab.guest.v1.'+PREVIEW_VARIANT;
+const sharedKey=Symbol.for('67park.feel-lab.transport.v1.'+PREVIEW_VARIANT);
 const state=globalThis[sharedKey]??=( {pending:null,session:null} );
 const endpoint=path=>PREVIEW_BACKEND+'/'+PREVIEW_VARIANT+path;
 export async function ensurePreviewGuest(){

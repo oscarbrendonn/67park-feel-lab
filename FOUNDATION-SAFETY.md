@@ -2,6 +2,8 @@
 
 Scope: Feel Lab only. The Kimi desktop/mobile repositories and their shared
 backend are unchanged. Pets and corner/terrain edits are not part of this release.
+Feel Lab uses its own browser guest-token namespace; the shared Pages origin must
+not overwrite identities used by the protected Kimi previews.
 
 ## Implemented
 
