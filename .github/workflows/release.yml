@@ -28,6 +28,7 @@ jobs:
         run: npm run test:browser
         env:
           PARK_SOAK_MS: '900000'
+          PARK_SOFTWARE_RENDER: '1'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

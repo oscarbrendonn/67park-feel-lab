@@ -5,13 +5,14 @@ const {spawn}=require('node:child_process');
 const fs=require('node:fs');
 const port=Number(process.env.PARK_QA_PORT||8499),origin='http://127.0.0.1:'+port,base=origin+'/67park-feel-lab/';
 const soakMs=Number(process.env.PARK_SOAK_MS||120000);
+const softwareRender=process.env.PARK_SOFTWARE_RENDER==='1';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let server,browser;
 async function start(){
  server=spawn(process.execPath,['qa/regression-server.mjs'],{stdio:['ignore','pipe','inherit'],env:process.env});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('QA server start timed out')),60000);server.stdout.on('data',b=>{process.stdout.write(b);if(String(b).includes('REGRESSION_READY')){clearTimeout(timer);resolve();}});server.once('exit',c=>{clearTimeout(timer);reject(Error('QA server exited '+c));});});
  const mac='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
- browser=await chromium.launch({headless:true,...(process.env.PARK_CHROME?{executablePath:process.env.PARK_CHROME}:process.platform==='darwin'&&fs.existsSync(mac)?{executablePath:mac}:{})});
+ browser=await chromium.launch({headless:true,channel:'chromium',...(softwareRender?{args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}:{}),...(process.env.PARK_CHROME?{executablePath:process.env.PARK_CHROME}:process.platform==='darwin'&&fs.existsSync(mac)?{executablePath:mac}:{})});
 }
 async function peer(){
  const guest=await(await fetch(origin+'/kimi/api/session',{headers:{Origin:origin}})).json(),messages=[],sockets=[];
@@ -27,6 +28,21 @@ async function run(mobile){
   localStorage.setItem('67park-feel-lab.character.v3',JSON.stringify({base:'goril'}));localStorage.setItem('67park-feel-lab.player-profile.v1',JSON.stringify({version:1,base:'goril'}));localStorage.setItem('67park-feel-lab-muted','1');
   window.__gate={frames:0,last:0,maxGap:0,losses:0};const tick=t=>{if(__gate.last)__gate.maxGap=Math.max(__gate.maxGap,t-__gate.last);__gate.last=t;__gate.frames++;requestAnimationFrame(tick)};requestAnimationFrame(tick);document.addEventListener('webglcontextlost',()=>__gate.losses++,true);
  });
+ if(softwareRender)await page.addInitScript(()=>{
+  // The hosted runner has no GPU. Keep the real scene, materials, animation,
+  // network and UI, but bound fragment/shadow raster cost in the TEST browser.
+  // This is not a product quality setting or a physical-device FPS benchmark.
+  const seen=new WeakSet();
+  setInterval(()=>{
+   const world=window.__islandWorld,r=world?.renderer;
+   if(r&&!seen.has(r)){seen.add(r);r.setPixelRatio(.25);}
+   const scene=world?.scene||window.__eggyScene;
+   scene?.traverse(o=>{
+    if(!o.shadow||seen.has(o))return;seen.add(o);
+    o.shadow.mapSize.set(256,256);o.shadow.map?.dispose();o.shadow.map=null;o.shadow.needsUpdate=true;
+   });
+  },250);
+ });
  try{
   // A failed map download must leave a retry route, never an endless welcome.
   let failed=0;await page.route('**/island/ada_calisma.glb*',r=>{failed++;return r.fulfill({status:503,body:'Intentional isolated QA failure'});});
@@ -38,9 +54,21 @@ async function run(mobile){
   // the local hardware browser. This is a bounded LOAD timeout; the gameplay
   // stall threshold below stays unchanged and is measured only after entry.
   await page.waitForFunction(()=>window.__islandWorld?.ready&&window.__eggyNet?.connected&&window.__candyOnline?.data.connected&&window.__parkHousing?.debug().model&&!document.querySelector('.wardrobe'),null,{timeout:180000});
-  console.log('PASS asset retry',mobile);errors.length=0;
+  console.log('PASS asset retry',mobile,'render profile',softwareRender?'software-quarter-resolution':'hardware-default');errors.length=0;
   const read=()=>page.evaluate(()=>({frame:__islandWorld.renderer.info.render.frame,gap:__gate.maxGap,losses:__gate.losses,party:__party.status(),home:__parkHousing.debug(),id:__candyOnline.data.me.id,connected:__eggyNet.connected&&__candyOnline.data.connected,programs:__islandWorld.renderer.info.programs?.length}));
-  async function check(name,action){await page.evaluate(()=>{__gate.maxGap=0});const before=await read();await action();await page.waitForTimeout(600);const after=await read();assert(after.frame-before.frame>=4,name+' renderer stopped');assert(after.gap<2500,name+' frame stall '+after.gap);assert.equal(after.losses,0);assert.equal(after.party.disabled,false);assert.equal(after.home.failed,false);assert.deepEqual(errors,[]);console.log('PASS',mobile,name,JSON.stringify({frames:after.frame-before.frame,maxGap:Math.round(after.gap),programs:after.programs}));}
+  async function check(name,action){
+   await page.evaluate(()=>{__gate.maxGap=0});const before=await read();
+   await action();const actionEnd=await read();
+   // Prove actual drawing continues AFTER the action. An RAF heartbeat alone
+   // can continue with a stopped Three renderer. Two new rendered frames must
+   // arrive within the unchanged 2.5s freeze deadline; do not confuse software
+   // GPU FPS with a stopped renderer by counting four frames in a fixed 600ms.
+   await page.waitForFunction(frame=>__islandWorld.renderer.info.render.frame>=frame+2,actionEnd.frame,{timeout:2500});
+   await page.waitForTimeout(600);const after=await read();
+   assert(after.gap<2500,name+' frame stall '+after.gap);assert.equal(after.losses,0);
+   assert.equal(after.party.disabled,false);assert.equal(after.home.failed,false);assert.deepEqual(errors,[]);
+   console.log('PASS',mobile,name,JSON.stringify({frames:after.frame-before.frame,maxGap:Math.round(after.gap),programs:after.programs}));
+  }
   friend=await peer();await page.waitForFunction(id=>__candyOnline.data.island.players.some(p=>p.id===id),friend.id);
   await check('chat composer 12 messages and 1000 repeated submit attempts',async()=>{
    for(let i=0;i<12;i++){await page.locator('.park-chat button').last().click();await page.getByPlaceholder('Message everyone…').fill('QA message '+i);await page.locator('.park-chat button').last().click();await page.waitForTimeout(850);}
@@ -77,6 +105,6 @@ async function run(mobile){
   assert((await read()).party.faults.some(f=>f.key==='pets-step'));
   if(mobile){const end=Date.now()+soakMs;let i=0;while(Date.now()<end){await check('mobile soak '+ ++i,async()=>{await page.keyboard.down('KeyW');await page.waitForTimeout(200);await page.keyboard.up('KeyW');await page.waitForTimeout(Math.min(10000,Math.max(0,end-Date.now())));});assert(friend.sockets.every(s=>s.readyState===1));}}
   await send('release');console.log('FOUNDATION_BROWSER_PASS',JSON.stringify({mobile,soakMs:mobile?soakMs:0,errors:errors.length,peerStillConnected:friend.sockets.every(s=>s.readyState===1)}));
- }catch(e){await page.screenshot({path:'.qa-results/failure-'+mobile+'.png'}).catch(()=>{});console.error('BROWSER_STATE',await page.evaluate(()=>JSON.stringify({text:document.body.innerText.slice(-2500),errors:window.__candyErrors,ready:window.__islandWorld?.ready,avatar:document.documentElement.dataset.gameplayAvatarState,park:window.__eggyNet?.connected,social:window.__candyOnline?.data.connected,home:window.__parkHousing?.debug(),party:window.__party?.status()})).catch(()=>''),errors);throw e;}finally{friend?.close();await context.close();}
+ }catch(e){await page.screenshot({path:'.qa-results/failure-'+mobile+'.png'}).catch(()=>{});console.error('BROWSER_STATE',await page.evaluate(()=>JSON.stringify({text:document.body.innerText.slice(-2500),errors:window.__candyErrors,ready:window.__islandWorld?.ready,frames:window.__gate,render:window.__islandWorld?.renderer?.info.render,avatar:document.documentElement.dataset.gameplayAvatarState,park:window.__eggyNet?.connected,social:window.__candyOnline?.data.connected,home:window.__parkHousing?.debug(),party:window.__party?.status()})).catch(()=>''),errors);throw e;}finally{friend?.close();await context.close();}
 }
 (async()=>{fs.mkdirSync('.qa-results',{recursive:true});await start();if(process.env.PARK_VIEW!=='mobile')await run(false);if(process.env.PARK_VIEW!=='desktop')await run(true);})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{await browser?.close();server?.kill('SIGTERM');});
