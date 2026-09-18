@@ -8,6 +8,11 @@
 #party-settings small{font-size:10px;letter-spacing:.13em;font-weight:800;color:#8c7e7b}
 #party-settings .party-close{min-width:44px;height:44px;background:linear-gradient(#ffdfea,#f7bdd3);box-shadow:0 3px 0 #d5a3b7;border:2px solid white}
 #party-settings .party-intro{font-size:13px;color:#716872;margin:8px 0 18px}
+#party-settings .party-save-status{font-size:12px;line-height:1.5;color:#716872}
+#party-settings #settings-save-status{margin:0 0 8px}
+#party-settings #settings-save-status:is([data-state=error],[data-state=unavailable],[data-state=recovered]){padding:10px;border-radius:12px;background:#fff0ce;color:#73541f}
+#party-settings #settings-connection{font-size:13px;font-weight:700;margin:12px 0 4px;color:#856b34}
+#party-settings #settings-connection[data-state=connected]{color:#3d8069}
 #party-settings section{border:1px solid #e6ddcf;background:#ffffff9c;border-radius:19px;padding:12px 14px;margin:12px 0}
 #party-settings section h3{font-size:15px;letter-spacing:-.02em;margin:0 0 10px;color:#514354}
 #party-settings section:nth-of-type(1) h3{color:#3e7ca8}

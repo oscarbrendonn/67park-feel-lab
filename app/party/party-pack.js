@@ -11,7 +11,7 @@ import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
 // Loaded after app/main.js. Config: window.__partyConfig = {runtime: "<runtime ?v>", carry: "<carry ?v>"}.
 import * as THREE from 'three';
 import {playerSettings as settings,savePlayerSettings as saveSettings} from '../player-settings.js';
-import {installPlayerSettings} from './settings-panel.js';
+import {installPlayerSettings} from './settings-panel.js?v=foundation-basics-1';
 import { createPartyAudio } from './party-audio.js?v=skate-sfx-1';
 
 const BASE = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');

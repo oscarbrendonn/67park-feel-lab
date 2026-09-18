@@ -92,5 +92,5 @@ test('shared player publishes feedback and entry cache keys include the sound fi
   assert(read('../app/main.js').includes('publishSkateFeedback(sk.events,A)'));
   assert(read('../app/party/party-pack.js').includes('./party-audio.js?v=skate-sfx-1'));
   const html=read('../index.html');assert(html.includes('app/main.js?v=pets-soft-2'));
-  assert(html.includes('app/party/party-pack.js?v=pets-soft-2'));
+  assert(html.includes('app/party/party-pack.js?v=foundation-basics-1'));
 });
