@@ -67,6 +67,7 @@ function nearestRemote() {
 }
 
 export function toggleParkCarry() {
+  if(globalThis.__parkHousing?.interact?.())return true;
   const stamp = now();
   if (stamp-lastToggle < 220 || !pose.valid) return false;
   if (targetId) { targetId=''; lastToggle=stamp; return true; }

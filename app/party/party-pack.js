@@ -1,5 +1,5 @@
 import {createParkLaunchers} from "./park-launchers.js?v=1";
-import {createHousing} from '../housing.js?v=home-entry-2';
+import {createHousing} from '../housing.js?v=home-social-1';
 import '../chat-send-focus.js?v=homes-1';
 import {createParkSocialToys} from "./park-social-toys.js?v=balloon-lift-2";
 import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
@@ -11,7 +11,7 @@ import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
 import * as THREE from 'three';
 import {playerSettings as settings,savePlayerSettings as saveSettings} from '../player-settings.js';
 import {installPlayerSettings} from './settings-panel.js';
-import { createPartyAudio } from './party-audio.js?v=toys-1';
+import { createPartyAudio } from './party-audio.js?v=home-social-1';
 
 const BASE = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
 const CFG = Object.assign({runtime: '', carry: ''}, (typeof window !== 'undefined' && window.__partyConfig) || {});
@@ -40,7 +40,7 @@ const buzz = pattern => { if (!settings.haptics || !isTouch) return; try { navig
 
 // ---------- world access ----------
 const player = {body: null, visual: null, map: 'city'};
-const housing = createHousing();
+const housing = createHousing({sound:name=>sfx.play(name)});
 window.__parkHousing = housing;
 const world = () => window.__islandWorld || null;
 const scene = () => window.__eggyScene || null;
@@ -86,6 +86,7 @@ window.__partyStep = guard((body, input, dt, map) => {
   botFlights.step();
 });
 window.__partyVisual = guard((group, dt) => {
+  housing.visual(group,dt);
   carryApi?.updateLocalCarryHands?.(group,dt);
   toys.visual(group,dt);
   if(player.map==='city') world()?.parkSwimVisual?.(group);

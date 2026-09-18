@@ -166,3 +166,60 @@ HOUSE=H01 node qa/action-stability.cjs
 
 These remain bounded Chrome tests, not physical iPhone/Android certification.
 Use `node qa/housing-layout-browser.cjs` for repeatable close-view captures.
+
+## Home social interactions — home-social-1
+
+- Feel Lab frontend only. Additive server protocol keeps existing clients,
+  island identity/chat, vehicles and the 16-person production cap unchanged.
+- Two independent sofa seats and one bed position per home; admission,
+  proximity and occupied slots are validated by the server. Poses are shared
+  with other players in the same lobby and survive a short reconnect.
+- Movement, Jump or Interact stands immediately at a tested clear point beside
+  furniture. A server acknowledgement does not swallow the initiating jump.
+  Walking still collides with furniture; an admitted rest pose bypasses only
+  the walking sweep. Grab packets cannot pick up a resting player.
+- Doorbells require proximity and notify only the online owner, with a bounded
+  synthesized two-note chime using existing audio/mute settings. Per-person and
+  per-home cooldowns prevent bell spam.
+- Owners choose an online lobby member in Homes. Invitations are private,
+  single-use and expire after five minutes. Visit is explicit consent, prepares
+  the room before travel and may enter a locked home; Not now declines. Leaving
+  the lobby, releasing the home or expiry invalidates the invitation.
+- Poses use authored skeleton rest rotations and every costume rig copy, a
+  short interruptible blend, and the existing render loop. No added GLB,
+  texture, geometry, shadow, light, separate loop or audio download. Changed
+  frontend JavaScript adds approximately 4 KB gzip across affected modules.
+- 46 focused unit/regression tests passed: protocol/privacy/expiry/rates,
+  all-eight-house clear stand points, 1,000-pose accumulation, duplicate rigs,
+  immediate pose release, room geometry, loader failure/retry, scene isolation,
+  camera, lobby and returning-player entry.
+- Two-client browser test passed with gorilla and Friends costume rigs, desktop
+  and 390×844 touch emulation: locked doorbell, invitation/acceptance, two sofa
+  seats, remote lying pose, touch Jump, keyboard movement cancellation, reconnect,
+  1,000 actual UI clicks, subsequent shared chat and 320/390/844 px dialog checks.
+  Normal and close inspection captures were visually reviewed; the sofa anchors
+  were moved ahead of decorative pillows to keep legs clear.
+- Three-client regression passed: failed room-load recovery, indoor/outdoor
+  peers, an independently moving car, chat, map overview/travel and repeated
+  entry/exit. No page/game errors were recorded in these bounded runs.
+- Desktop and 390×844 action stability passed again: 100 punch key presses,
+  1,000 Punch/Interact bursts, 20 home transitions per viewport, chat followed
+  by movement; mobile additionally ran 100 browser touch Punch taps. No game
+  errors, WebGL context losses or disabled party loops; the measured longest
+  action frame gap was 350 ms desktop and 66.6 ms mobile on this test Mac.
+- A deliberately crafted 1,000-message raw WebSocket burst triggers the existing
+  transport anti-abuse disconnect; this is distinct from repeated UI clicks,
+  which coalesce pending actions and continued rendering/chat in the test.
+
+Commands:
+```sh
+node --test qa/housing.test.mjs qa/feel-camera.test.mjs qa/lobby-stability.test.mjs qa/returning-entry.test.mjs
+node --loader ./qa/three-test-loader.mjs --test qa/housing-poses.test.mjs qa/housing-render.test.mjs qa/housing-loader.test.mjs qa/housing-scene.test.mjs
+node qa/housing-social-browser.cjs
+FEEL_URL=http://127.0.0.1:8497/67park-feel-lab/ node qa/housing-scene-browser.cjs
+HOUSE=H01 node qa/action-stability.cjs
+```
+
+These are local Chrome/real touch-event emulation checks, not physical iPhone,
+Android, 100-player or global-network certification. Ownership is still an
+ephemeral lobby/session reservation, not a persistent account-owned property.

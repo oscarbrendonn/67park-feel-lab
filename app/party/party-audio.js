@@ -2,7 +2,7 @@
 export function createPartyAudio({settings, saveSettings, gameMuted, host = window}) {
   let ctx, master, compressor, noise, blocked = false;
   const voices = new Set(), last = new Map(), counts = {};
-  const limits = {step: 90, jump: 140, double: 140, land: 100, swing: 150, hit: 100, pad: 250, grab: 150, throw: 150, click: 60, stars: 350, note:80};
+  const limits = {step: 90, jump: 140, double: 140, land: 100, swing: 150, hit: 100, pad: 250, grab: 150, throw: 150, click: 60, stars: 350, note:80, bell:1800};
   const audible = () => ctx?.state === 'running' && !host.document.hidden && !blocked && !gameMuted() && settings.sfx > 0;
   const volume = () => {
     if (ctx && master) master.gain.setTargetAtTime(audible() ? Math.min(1, Math.max(0, Number(settings.sfx) || 0)) * 0.65 : 0, ctx.currentTime, 0.025);
@@ -48,6 +48,7 @@ export function createPartyAudio({settings, saveSettings, gameMuted, host = wind
     source.start(start); source.stop(end + 0.01);
   }
   const recipes = {
+    bell(){voice({from:660,to:660,duration:.3,gain:.16});voice({from:520,to:520,duration:.45,delay:.22,gain:.13});},
     note(index) {
       const f=[261.63,293.66,329.63,392,440,523.25][index];if(!f)return;
       voice({type:'sine',from:f,to:f,duration:.42,gain:.16});
