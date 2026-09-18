@@ -39,7 +39,7 @@ test('real sockets enforce chat policy and reconnect guest identity on isolated 
   const ws=new WebSocket(base.replace('http','ws')+'/kimi/ws',['67park-v1','guest.'+guest.token],{headers:{Origin:origin}});sockets.push(ws);const messages=[];ws.on('message',b=>messages.push(JSON.parse(b)));await new Promise((r,j)=>{ws.once('open',r);ws.once('error',j)});
   ws.send(JSON.stringify({t:'chat',text:'porn',nonce:'blocked'}));await new Promise(r=>setTimeout(r,80));assert(messages.some(m=>m.t==='chat.result'&&!m.ok));assert(!messages.some(m=>m.t==='chat'));
   ws.send(JSON.stringify({t:'chat',text:'Ready to play',nonce:'fine'}));await new Promise(r=>setTimeout(r,80));assert(messages.some(m=>m.t==='chat'&&m.text==='Ready to play'));
-  const resumed=await (await fetch(base+'/kimi/api/session',{headers:{Origin:origin,Authorization:'Bearer '+guest.token}})).json();assert.equal(resumed.id,guest.id);assert.equal((await (await fetch(base+'/health')).json()).ok,true);
+  const resumed=await (await fetch(base+'/kimi/api/session',{headers:{Origin:origin,Authorization:'Bearer '+guest.token}})).json();assert.equal(resumed.id,guest.id);assert.equal(resumed.shareOrigin,guest.shareOrigin);assert.equal((await (await fetch(base+'/health')).json()).ok,true);
  }finally{for(const ws of sockets)ws.terminate();await app.close();}
 });
 test('a failed connection attachment closes only that socket and leaves the authority alive',async()=>{

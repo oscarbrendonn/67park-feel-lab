@@ -4,13 +4,19 @@ export function installLobbyLoadGuard(app,{
  origins=['https://oscarbrendonn.github.io','http://127.0.0.1:8288','http://127.0.0.1:8298']
 }={}){
  if(!Number.isInteger(capacity)||capacity<2||capacity>100)throw Error('Lobby capacity must be 2..100');
- const disposers=[],metrics={motionSent:0,motionDeferred:0,backpressureDrops:0,rosterFlushes:0,recoveredSessions:0};
+ const disposers=[],metrics={motionSent:0,motionDeferred:0,backpressureDrops:0,rosterFlushes:0,rosterFailures:0,recoveredSessions:0};
  for(const hub of app.hubs.values()){
   const originalCapacity=hub.lobbyCapacity;
   hub.lobbyCapacity=capacity;
   const refresh=hub.refreshLobby,cast=hub.lobbyBroadcast,close=hub.close,pending=new Map(),interest=new Map(),farSent=new Map();
   let timer=null;
-  function flush(){timer=null;for(const l of pending.values())if(hub.lobbies.get(l.code)===l){refresh.call(hub,l);metrics.rosterFlushes++}pending.clear()}
+  function flush(){
+   timer=null;const batch=[...pending.values()];pending.clear();
+   for(const l of batch)if(hub.lobbies.get(l.code)===l){
+    try{refresh.call(hub,l);metrics.rosterFlushes++}
+    catch{metrics.rosterFailures++} // A timer exception must not kill every lobby.
+   }
+  }
   hub.refreshLobby=function(l){if(!l)return;pending.set(l.code,l);if(!timer){timer=setTimeout(flush,refreshInterval);timer.unref?.()}};
   function nearSet(recipient,l,now){
    let row=interest.get(recipient.id);
@@ -53,7 +59,7 @@ export function installLobbyLoadGuard(app,{
    if(renewals.size>512)for(const [key,v]of renewals)if(now-v.at>60000)renewals.delete(key);
    const headers={'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Vary':'Origin','Access-Control-Allow-Origin':req.headers.origin};
    if(++row.n>12){res.writeHead(429,{...headers,'Retry-After':'60'});res.end(JSON.stringify({error:'Too many reconnect attempts; please wait.'}));return}
-   try{const session=hub.session(token);metrics.recoveredSessions++;res.writeHead(200,headers);res.end(JSON.stringify({id:session.player.id,friendCode:session.player.friendCode,token:session.token,mode:'isolated-guest-test',persistentAccount:false,shareOrigin:'https://oscarbrendonn.github.io/67park-'+match[1]+'-preview-20260914'}));return}catch{res.writeHead(503,headers);res.end(JSON.stringify({error:'Session unavailable'}));return}
+   try{const session=hub.session(token);metrics.recoveredSessions++;res.writeHead(200,headers);res.end(JSON.stringify({id:session.player.id,friendCode:session.player.friendCode,token:session.token,mode:'isolated-guest-test',persistentAccount:false,shareOrigin:'https://oscarbrendonn.github.io/67park-feel-lab/'}));return}catch{res.writeHead(503,headers);res.end(JSON.stringify({error:'Session unavailable'}));return}
   }
   for(const handler of handlers)handler.call(app.server,req,res);
  };

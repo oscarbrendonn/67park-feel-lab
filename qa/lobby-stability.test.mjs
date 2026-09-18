@@ -53,6 +53,15 @@ test('join burst coalesces full roster refreshes and cancel on dispose',async()=
  const f=fixture();for(let i=0;i<100;i++)f.hub.refreshLobby(f.lobby);
  await new Promise(r=>setTimeout(r,20));assert.equal(f.counts().refresh,1);f.guard.dispose();
 });
+test('one failing asynchronous roster refresh cannot crash or starve another lobby',async()=>{
+ const bad={code:'bad'},good={code:'good'};let calls=0;
+ const hub={lobbyCapacity:16,lobbies:new Map([['bad',bad],['good',good]]),players:new Map(),refreshLobby(l){if(l===bad)throw Error('QA roster failure');calls++},lobbyBroadcast(){},close(){}};
+ const app={hubs:new Map([['kimi',hub]]),server:new EventEmitter()},guard=installLobbyLoadGuard(app,{refreshInterval:1});
+ try{
+  for(let i=0;i<2;i++){hub.refreshLobby(bad);hub.refreshLobby(good);await new Promise(r=>setTimeout(r,20));}
+  assert.equal(calls,2);assert.equal(guard.metrics.rosterFailures,2);assert.equal(guard.metrics.rosterFlushes,2);
+ }finally{guard.dispose()}
+});
 test('authenticated renewals keep per-session limit and untrusted origin/unknown token use original validation',()=>{
  const f=fixture();function request(token='a'.repeat(43),origin='https://oscarbrendonn.github.io'){
   const response={status:0,writeHead(code){this.status=code},end(body){this.body=body}};

@@ -30,7 +30,7 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
  const server=http.createServer((req,res)=>{
   const origin=req.headers.origin;
   const reply=(status,value)=>{res.writeHead(status,headers(origin));res.end(JSON.stringify(value));};
-  if(req.url==='/health'&&req.method==='GET'){const ok=Date.now()-lastHealthy<2000&&!safety.metrics.storageError&&![...hubs.values()].some(h=>h.storageError);reply(ok?200:503,{ok,revision:'foundation-safety-1',faults,roomFaults:[...hubs.values()].reduce((n,h)=>n+(h.roomFaults?.length||0),0),variants:Object.fromEntries([...hubs].map(([v,h])=>[v,{online:[...h.players.values()].filter(p=>p.online).length,rooms:h.rooms.size}]))});return;}
+  if(req.url==='/health'&&req.method==='GET'){const ok=Date.now()-lastHealthy<2000&&!safety.metrics.storageError&&![...hubs.values()].some(h=>h.storageError);reply(ok?200:503,{ok,revision:'foundation-safety-1',faults,lobbyFaults:loadGuard.metrics.rosterFailures,roomFaults:[...hubs.values()].reduce((n,h)=>n+(h.roomFaults?.length||0),0),variants:Object.fromEntries([...hubs].map(([v,h])=>[v,{online:[...h.players.values()].filter(p=>p.online).length,rooms:h.rooms.size}]))});return;}
   const match=route(req);if(!match){reply(404,{error:'Not found'});return;}
   if(!allowed.has(origin)){reply(403,{error:'Origin not allowed'});return;}
   if(req.method==='OPTIONS'){
@@ -67,7 +67,7 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
  });
  let lastHealthy=Date.now();
  const app={server,hubs,get faults(){return faults;},async close(){clearInterval(tick);clearInterval(heartbeat);safety.dispose();for(const hub of hubs.values())hub.close();for(const ws of wss.clients)ws.terminate();wss.close();await new Promise(r=>server.close(r));}};
- installLobbyLoadGuard(app,{capacity:16,origins});installHousing(app);
+ const loadGuard=installLobbyLoadGuard(app,{capacity:16,origins});installHousing(app);
  const safety=installSocialSafety(app,{file:dataDir?path.join(dataDir,'safety.json'):null});
  const tick=setInterval(()=>{let ok=true;for(const hub of hubs.values())try{hub.update();}catch{faults++;ok=false;}if(ok)lastHealthy=Date.now();},1000/60);
  const heartbeat=setInterval(()=>{for(const ws of wss.clients){if(!ws.alive)ws.terminate();else{ws.alive=false;ws.ping();}}},15000);
