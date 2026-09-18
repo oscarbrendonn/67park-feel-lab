@@ -5,7 +5,7 @@ register('./three-test-loader.mjs',import.meta.url);
 const T=await import('../vendor/three.module.js');
 const {createPetModels}=await import('../app/pets/pet-model.js');
 const {createPetFollower}=await import('../app/pets/pet-follow.js');
-const {createPetSelection,petFromCombo,comboWithPet,petSelection}=await import('../app/pets/pet-state.js?v=pets-1');
+const {createPetSelection,petFromCombo,comboWithPet,petSelection}=await import('../app/pets/pet-state.js?v=pets-soft-2');
 const {createParkPets}=await import('../app/pets/park-pets.js');
 
 test('bounded pet metadata preserves every existing outfit field',()=>{
@@ -47,6 +47,31 @@ test('follower walks, stops, recalls after teleport and never crosses a wall',()
   assert.equal(follower.state.speed,0);assert(follower.stats().trail<=80);
   follower.step(.05,{x:60,y:0,z:60},0);assert(Math.hypot(follower.state.x-60,follower.state.z-60)<2);
   assert(probes<10000);assert.doesNotThrow(()=>follower.step(NaN,{x:NaN,y:0,z:0},Infinity));
+});
+
+test('rounded sculpts keep a small shared budget and resting paws on the floor',()=>{
+  const factory=createPetModels({shadows:false}),v=new T.Vector3();
+  for(const kind of ['cat','dog']){
+    const pet=factory.create(kind,{scale:1}),g=pet.mesh.geometry;
+    const bytes=Object.values(g.attributes).reduce((sum,a)=>sum+a.array.byteLength,0)+g.index.array.byteLength;
+    assert(bytes<550000,kind+' geometry budget');
+    for(const name of ['position','normal','color','skinWeight'])assert([...g.attributes[name].array].every(Number.isFinite),name+' must remain finite');
+    for(let i=0;i<g.attributes.skinWeight.count;i++){
+      const a=g.attributes.skinWeight,sum=a.getX(i)+a.getY(i)+a.getZ(i)+a.getW(i);
+      assert(Math.abs(sum-1)<1e-6,'Each vertex must stay attached to the rig');
+    }
+    for(let i=0;i<240;i++)pet.update(1/60,{sitting:true,reducedMotion:true});
+    pet.root.updateMatrixWorld(true);pet.mesh.skeleton.update();const floor={};
+    for(let i=0;i<g.attributes.position.count;i++){
+      const bone=pet.mesh.skeleton.bones[g.attributes.skinIndex.getX(i)].name;
+      if(!/^(front|back)/.test(bone))continue;
+      v.fromBufferAttribute(g.attributes.position,i);pet.mesh.applyBoneTransform(i,v);
+      floor[bone]=Math.min(floor[bone]??Infinity,v.y);
+    }
+    for(const y of Object.values(floor))assert(y>-.002&&y<.04,'Resting paws must not float or sink');
+    assert.equal(Object.keys(floor).length,4);pet.dispose();
+  }
+  factory.dispose();
 });
 
 test('a water-only area does not create a floating pet',()=>{

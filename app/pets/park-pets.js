@@ -1,6 +1,6 @@
-import {createPetModels} from './pet-model.js?v=pets-1';
-import {createPetFollower} from './pet-follow.js?v=pets-1';
-import {petSelection,petFromCombo,comboWithPet,validPet} from './pet-state.js?v=pets-1';
+import {createPetModels} from './pet-model.js?v=pets-soft-2';
+import {createPetFollower} from './pet-follow.js?v=pets-soft-2';
+import {petSelection,petFromCombo,comboWithPet,validPet} from './pet-state.js?v=pets-soft-2';
 
 // Optional, isolated cosmetic layer. One existing frame hook and shared avatar
 // metadata; no new RAF, light, physics body, position stream or server process.

@@ -8,9 +8,9 @@ const wait=(p,fn,arg)=>p.waitForFunction(fn,arg,{timeout:180000});
  let a,b;
  async function page(mobile=false){const p=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1280,height:900},isMobile:mobile,hasTouch:mobile,deviceScaleFactor:mobile?2:1});p.on('pageerror',e=>errors.push(e.message));return p;}
  const read=p=>p.evaluate(()=>({pets:__parkPets.debug(),frame:__islandWorld.renderer.info.render.frame,p:__eggyInput.playerRef.body.translation(),memory:{...__islandWorld.renderer.info.memory},errors:__candyErrors,connected:__eggyNet.connected,id:__eggyNet.id}));
- async function game(p,kind){await p.addInitScript(()=>{localStorage.setItem('67park-feel-lab.character.v3',JSON.stringify({base:'goril'}));localStorage.setItem('67park-feel-lab.player-profile.v1',JSON.stringify({version:1,base:'goril'}));localStorage.setItem('67park-feel-lab-muted','1');});await p.goto(BASE+'?v=pets-1&pet='+kind,{waitUntil:'domcontentloaded',timeout:120000});await p.locator('.wardrobe').waitFor({state:'hidden',timeout:180000});await wait(p,()=>window.__islandWorld?.ready&&window.__parkPets?.debug().active&&window.__eggyNet?.connected);await p.evaluate(()=>__tp([200,10.3,88]));await p.waitForTimeout(1500);}
+ async function game(p,kind){await p.addInitScript(()=>{localStorage.setItem('67park-feel-lab.character.v3',JSON.stringify({base:'goril'}));localStorage.setItem('67park-feel-lab.player-profile.v1',JSON.stringify({version:1,base:'goril'}));localStorage.setItem('67park-feel-lab-muted','1');});await p.goto(BASE+'?v=pets-soft-2&pet='+kind,{waitUntil:'domcontentloaded',timeout:120000});await p.locator('.wardrobe').waitFor({state:'hidden',timeout:180000});await wait(p,()=>window.__islandWorld?.ready&&window.__parkPets?.debug().active&&window.__eggyNet?.connected);await p.evaluate(()=>__tp([200,10.3,88]));await p.waitForTimeout(1500);}
  try {
-  a=await page();await a.goto(BASE+'pets/?v=pets-1');await wait(a,()=>window.__petStudio?.stats().frames>30);
+  a=await page();await a.goto(BASE+'pets/?v=pets-soft-2');await wait(a,()=>window.__petStudio?.stats().frames>30);
   await a.screenshot({path:OUT+'/pets-studio-desktop.png'});
   for(const kind of ['cat','dog']){const url=await a.evaluate(kind=>__petStudio.thumbnail(kind),kind);if(!process.env.FEEL_URL)fs.writeFileSync(path.resolve(__dirname,'../pets/'+kind+'.png'),Buffer.from(url.split(',')[1],'base64'));}
   await a.getByRole('button',{name:'Sit & relax'}).click();await a.waitForTimeout(900);assert.equal(await a.evaluate(()=>__petStudio.cat.stats.pose),'sit');
@@ -25,7 +25,7 @@ const wait=(p,fn,arg)=>p.waitForFunction(fn,arg,{timeout:180000});
   await a.screenshot({path:OUT+'/pet-follow-desktop.png'});
   await a.getByRole('button',{name:'Bag',exact:true}).click();await a.getByRole('button',{name:'Choose Dog',exact:true}).click();await wait(a,()=>__parkPets.debug().local?.kind==='dog');
   assert(await a.getByRole('button',{name:'Choose Dog'}).getAttribute('aria-pressed')==='true');await a.screenshot({path:OUT+'/pet-bag-desktop.png'});
-  await a.keyboard.press('KeyI');await a.goto(BASE+'?v=pets-1');await wait(a,()=>__parkPets?.debug().local?.kind==='dog'&&!document.querySelector('.wardrobe'));console.log('SAVED PET PASS');
+  await a.keyboard.press('KeyI');await a.goto(BASE+'?v=pets-soft-2');await wait(a,()=>__parkPets?.debug().local?.kind==='dog'&&!document.querySelector('.wardrobe'));console.log('SAVED PET PASS');
   await a.evaluate(()=>__tp([200,10.3,88]));await a.waitForTimeout(1200);
   b=await page(true);await game(b,'cat');
   await wait(a,()=>__parkPets.debug().remotes.some(p=>p.kind==='cat'&&p.visible));await wait(b,()=>__parkPets.debug().remotes.some(p=>p.kind==='dog'&&p.visible));console.log('ONLINE PEERS PASS');

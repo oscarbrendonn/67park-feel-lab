@@ -1,5 +1,5 @@
 import {publishSkateFeedback} from "./skate-feedback.js?v=skate-sfx-1";
-import {createPetInventory as __createPetInventory} from './pets/pet-inventory.js?v=pets-1';
+import {createPetInventory as __createPetInventory} from './pets/pet-inventory.js?v=pets-soft-2';
 import {createStudioPanel as __createStudioPanel} from "./studio-panel.js";
 import {applyGorillaStudioItems as __applyStudioItems} from "./gorilla-studio-items.js";
 import {withoutFittedItems as __withoutFittedItems,registerStudioParts as __registerStudioParts} from "./studio-catalog.js";

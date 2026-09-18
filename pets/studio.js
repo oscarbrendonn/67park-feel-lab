@@ -1,17 +1,17 @@
 import * as T from 'three';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
-import {createPetModels} from '../app/pets/pet-model.js?v=pets-1';
+import {createPetModels} from '../app/pets/pet-model.js?v=pets-soft-2';
 
 const canvas=document.querySelector('#pets-canvas'),status=document.querySelector('#pet-loading');
 try {
   const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setClearColor(0xf8f3eb,0);
-  renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
+  renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.87;
   const scene=new T.Scene(),camera=new T.PerspectiveCamera(34,1,.1,40),turn=new T.Group();scene.add(turn);
   const pmrem=new T.PMREMGenerator(renderer),env=new RoomEnvironment();const environment=pmrem.fromScene(env,.06);scene.environment=environment.texture;env.dispose();pmrem.dispose();
-  scene.environmentIntensity=.6;scene.add(new T.HemisphereLight('#fff9ed','#b8aeb5',.95));
-  const key=new T.DirectionalLight('#fff5e5',1.65);key.position.set(-3,5,5);scene.add(key);
-  const fill=new T.DirectionalLight('#dbe8ff',.45);fill.position.set(4,2,-3);scene.add(fill);
+  scene.environmentIntensity=.65;scene.add(new T.HemisphereLight('#fff9ed','#a38c82',.55));
+  const key=new T.DirectionalLight('#fff5e5',2.15);key.position.set(-3,5,5);scene.add(key);
+  const fill=new T.DirectionalLight('#dbe8ff',.30);fill.position.set(4,2,-3);scene.add(fill);
   const models=createPetModels(),cat=models.create('cat',{scale:1}),dog=models.create('dog',{scale:1});
   cat.root.position.x=-.83;dog.root.position.x=.83;cat.root.rotation.y=.12;dog.root.rotation.y=-.12;turn.add(cat.root,dog.root);
   let mode='walk',yaw=-.30,pitch=.18,zoom=1,last=performance.now(),frames=0,raf=0,drag=null,pinch=0,contextLost=false;
