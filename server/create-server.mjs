@@ -39,6 +39,7 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
   }
   if(req.method!=='GET'){reply(405,{error:'GET only'});return;}
   const hub=hubs.get(match[1]);
+  if(!hub){reply(404,{error:'Unknown preview variant'});return;}
   if(match[2]==='health'){reply(200,{ok:!faults});return;}
   if(match[2]!=='api/session'){reply(426,{error:'WebSocket required'});return;}
   if(limited(req)){reply(429,{error:'Too many connection attempts; please wait.'});return;}
@@ -48,7 +49,7 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
   if(!hub.lookup(token)&&hub.players.size>=maxPlayers){reply(503,{error:'Preview is full'});return;}
   try{
    const session=hub.session(token||undefined);
-   reply(200,{id:session.player.id,friendCode:session.player.friendCode,token:session.token,mode:'isolated-guest-test',persistentAccount:false,shareOrigin:'https://oscarbrendonn.github.io/67park-'+match[1]+'-preview-20260914'});
+   reply(200,{id:session.player.id,friendCode:session.player.friendCode,token:session.token,mode:'isolated-guest-test',persistentAccount:false,shareOrigin:'https://oscarbrendonn.github.io/67park-feel-lab/'});
   }catch{reply(503,{error:'Session unavailable'});}
  });
  const wss=new WebSocketServer({noServer:true,maxPayload:8192,perMessageDeflate:false,handleProtocols:protocols=>protocols.has('67park-v1')?'67park-v1':false});
@@ -60,7 +61,8 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
   if(!player){reject();return;}
   wss.handleUpgrade(req,socket,head,ws=>{
    ws.alive=true;ws.on('error',()=>{});ws.on('pong',()=>{ws.alive=true;});
-   hub.attach(player,ws,match[2]==='ws'?'lobby':'online');
+   try{hub.attach(player,ws,match[2]==='ws'?'lobby':'online');}
+   catch{faults++;ws.close(1011,'Connection setup failed; please reconnect.');}
   });
  });
  let lastHealthy=Date.now();
