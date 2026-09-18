@@ -85,18 +85,26 @@ export function validLauncherSpot(w,x,z,kind){
   const px=x+dx,pz=z+dz,g=w.ground(px,pz),hit=w.sample?.(px,pz),name=hit?.object?.name||'';
   if(!Number.isFinite(g)||Math.abs(g-y)>.15||w.water?.(px,pz)||w.treeBlocked?.(px,g+.55,pz))return false;
   if(hit&&Math.abs(g-hit.point.y)>.3)return false;
-  if(kind==='trampoline'?!/CIM|GRASS/i.test(name):!/YOL|PATIKA|PAVE|ROAD|WALK|PLAZA/i.test(name))return false;
+  if(kind==='trampoline'?!/CIM|GRASS/i.test(name):!/YOL|PATIKA|PAVE|ROAD|WALK|PLAZA|KALDIRIM/i.test(name))return false;
  }
  return true;
 }
+// Surveyed road-end pockets, not spawn-relative traffic lanes or park crossings.
+// If the map changes, omit an unsafe hatch; never search back toward the middle.
+export const HATCH_SITES=Object.freeze([
+ Object.freeze({kind:'hatch',x:245,z:130,endX:254,endZ:130}),
+ Object.freeze({kind:'hatch',x:158,z:-234,endX:158,endZ:-239})
+]);
 export function launcherPlacements(w,s){
- const spawn=w.spawn||[163,10,121],candidates=[
-  {kind:'hatch',x:spawn[0]-6,z:spawn[2]+5},{kind:'hatch',x:spawn[0]+7,z:spawn[2]-6},
+ const candidates=[...HATCH_SITES,
   // Surveyed open park lawns, away from the sculpture plinth and fountain.
   {kind:'trampoline',x:133,z:103},{kind:'trampoline',x:169,z:61}
  ];
  const out=[],offsets=[[0,0],[3,0],[-3,0],[0,3],[0,-3],[6,0],[-6,0],[0,6],[0,-6],[6,6],[-6,-6],[9,0],[-9,0],[0,9],[0,-9],[12,0],[-12,0],[0,12],[0,-12]];
- for(const c of candidates)for(const [dx,dz]of offsets){const x=c.x+dx,z=c.z+dz;if(out.some(p=>(p.x-x)**2+(p.z-z)**2<36)||!validLauncherSpot(w,x,z,c.kind))continue;out.push({...c,x,y:w.ground(x,z),z});break;}
+ for(const c of candidates){
+  if(c.kind==='hatch'&&/YOL|ROAD|PATIKA|PAVE|WALK|PLAZA|KALDIRIM/i.test(w.sample?.(c.endX,c.endZ)?.object?.name||''))continue;
+  for(const [dx,dz]of c.kind==='hatch'?[[0,0]]:offsets){const x=c.x+dx,z=c.z+dz;if(out.some(p=>(p.x-x)**2+(p.z-z)**2<36)||!validLauncherSpot(w,x,z,c.kind))continue;out.push({...c,x,y:w.ground(x,z),z});break;}
+ }
  return out;
 }
 

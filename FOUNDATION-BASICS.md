@@ -50,3 +50,13 @@ Yeni mini oyun, pet veya ödül içeriğinden önce bu liste tamamlanmalı. Ayar
 - `qa/player-basics.test.mjs`, `qa/returning-entry.test.mjs`, `qa/skate-audio.test.mjs`, `qa/studio-catalog.test.mjs`, `qa/pets.test.mjs`, `qa/render-health.test.mjs`: 29 kontrol geçti.
 - `qa/player-basics.browser.cjs`: izole yerel sunucuda desktop 1280×900 ve Chrome mobil emülasyonu 390×844; ilk giriş, stüdyo, yenileme, kalıcı ayarlar, sıfırlamayı iptal/onay, kota hatası ve kurtarma, manuel rapor kopyalama/indirme, 100 kez panel aç/kapat, yeni soket yaratmama, çizimin devam etmesi, kısa kopma sırasında dışarıdaki oyuncunun bağlı kalması.
 - Bu, fiziksel iPhone/Android, uzun kopma, sunucu yeniden başlatma veya 100 render edilen karakter testi değildir. Genel yayına uygunluk onayı verilmez.
+
+## Rögar yerleşimi ve ek doğrulama — hatch-ends-1
+
+- İki kapak başlangıç/yol ortasından, ölçülmüş doğu yol sonu kaldırım cebine (245, 130) ve kuzey çıkmaz yol kenarına (158, -234) taşındı. Trambolinler yerinde. Su/ağaç/eğim veya yol uzaması yüzünden nokta güvenli olmazsa kapak yol ortasında alternatif aramak yerine atlanır.
+- `qa/launcher-placement.test.mjs`: 4 yerleşim/zemin koruma testi. İlgili ayar, yükleme, oda, lobi, çizim sağlığı ve kaykay sesi testleriyle toplam **34 test geçti**.
+- `qa/launcher-placement.browser.cjs`: izole yerel sunucuda desktop ve mobil emülasyonu; 4 platformun her biri gerçekten oyuncuyu havaya kaldırdı, çizim devam etti, takip edilen kaynak sayıları artmadı, yakalanmış sayfa/oyun hatası yoktu.
+- `qa/entry-recovery.browser.cjs`: ana harita GLB isteğine bilinçli 503 yanıtı; hata ekranı göründü, kayıtlı karakter korundu, ayarlar girişte gizli kaldı, Retry loading sonrası harita/karakter/online bağlantı yeniden hazır oldu. Desktop ve mobil emülasyonu geçti.
+- `qa/action-stability.cjs`: iki görünümde ev giriş/çıkışı (20 geçiş), 100 klavye punch, 1.000 punch tıklaması, 1.000 interact komutu, chat sonrası hareket; mobilde ayrıca 100 gerçek dokunma olayı. Kalıcı render durması, WebGL context kaybı veya yakalanmış oyun hatası görülmedi. **İlk kapı açılışında desktop yaklaşık 717 ms, mobil emülasyonu 300 ms azami kare aralığı ölçüldü; bu kısa takılmalar açık performans bulgusudur.**
+- Bunlar fiziksel cihaz veya kalabalık lobi sertifikasyonu değildir. Önceki auditte açık kalan uzun kopmada grup/lobi devamlılığı, mini oyun sosyal bağlantısı, odalar arası hata izolasyonu ve sunucu yeniden başlamasında kalıcı kimlik/arkadaş verisi bu sürümde düzeltilmedi. Yukarıdaki eksik sosyal güvenlik ve hesap başlıkları geçerlidir.
+- Üç yeni fantastik pet yalnızca ayrı Blender konsept dosyalarıdır; ana oyuna eklenmedi, bu sürüm onları indirmez.
