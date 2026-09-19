@@ -46,6 +46,28 @@ test('low curbs and stairs remain walkable; tall edges and thin walls stay close
   const r=resolveCharacterContact(walk,base(ground,{x:-1,z:0},{x:2,z:0}));assert(r.blocked);assert(r.position.x<0);
  }
 });
+test('25 cm park entrances and 32 cm paved steps are traversable in every direction',()=>{
+ // Exact production heights at the pictured southern park entrance (170,116).
+ // Testing only an 18 cm synthetic curb previously missed this regression.
+ const road=9.227547645568848,path=9.47878646850586;
+ for(const rise of [path-road,.3,.32])for(const axis of ['x','z'])for(const sign of [-1,1]){
+  const ground=(x,z)=>road+({x,z}[axis]*sign>=0?rise:0);
+  const low={x:0,z:0,y:road+.555,[axis]:-sign},high={...low,[axis]:sign};
+  const up=resolveCharacterContact(walk,base(ground,low,high));
+  assert(!up.blocked,JSON.stringify({axis,sign,rise,up}));
+  assert(Math.abs(up.position.y-(road+rise+.555))<1e-6);
+  const down=resolveCharacterContact(walk,base(ground,up.position,low));
+  assert(!down.blocked);assert(Math.abs(down.position.y-(road+.555))<1e-6);
+ }
+});
+test('larger walls, unsupported ledges and explicit house/tree barriers remain closed',()=>{
+ for(const ground of [x=>x>=0?.36:0,x=>x>=0&&x<=.15?.3:0,x=>x>=0?8:0]){
+  const result=resolveCharacterContact(walk,base(ground,{x:-1,z:0},{x:2,z:0}));
+  assert(result.blocked);assert(result.position.x<0);
+ }
+ const result=resolveCharacterContact(walk,{...base(()=>0,{x:-1,z:0},{x:2,z:0}),blocked:x=>x>=0});
+ assert(result.blocked);assert(result.position.x<0);
+});
 test('skate contacts preserve slopes, slide at a wall, and stay bounded after a bad frame',()=>{
  const wall=(x,z)=>x>=0?8:0;
  const r=resolveCharacterContact(sweepRideContact,base(wall,{x:-.41,z:0},{x:.5,z:1}));
