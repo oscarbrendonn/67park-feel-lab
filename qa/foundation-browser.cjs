@@ -25,11 +25,19 @@ async function peer(){
 async function run(mobile){
  const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1280,height:900},isMobile:mobile,hasTouch:mobile});
  const page=await context.newPage(),errors=[];let friend;
+ // Passive, bounded QA-only trace. Preserve the production predicates and
+ // capture contact state before fixture cleanup can hide a failed wall push.
+ await page.route('**/app/character-contact.js?*',async route=>{
+  const response=await route.fetch(),source=await response.text(),anchor='feedback.update(state);';
+  assert.equal(source.split(anchor).length,2,'Contact trace anchor changed');
+  await route.fulfill({response,body:source.replace(anchor,anchor+' const trace=globalThis.__qaContactFrames;if(trace){trace.push({at:performance.now(),contact:state.contact,moving:state.moving,active:state.active,dt:state.dt,position:globalThis.__eggyInput?.playerRef?.body?.translation?.(),velocity:globalThis.__eggyInput?.playerRef?.body?.linvel?.()});if(trace.length>16)trace.shift();}')});
+ });
  page.on('pageerror',e=>errors.push(String(e.stack)));
  page.on('response',r=>{if(r.url().includes('/kimi/')&&r.status()>=400)console.log('NETWORK_FAIL',r.status(),new URL(r.url()).pathname);});
  await page.addInitScript(()=>{
   localStorage.setItem('67park-feel-lab.character.v3',JSON.stringify({base:'goril'}));localStorage.setItem('67park-feel-lab.player-profile.v1',JSON.stringify({version:1,base:'goril'}));localStorage.setItem('67park-feel-lab-muted','1');
   window.__gate={frames:0,last:0,maxGap:0,losses:0};const tick=t=>{if(__gate.last)__gate.maxGap=Math.max(__gate.maxGap,t-__gate.last);__gate.last=t;__gate.frames++;requestAnimationFrame(tick)};requestAnimationFrame(tick);document.addEventListener('webglcontextlost',()=>__gate.losses++,true);
+  window.__qaContactFrames=[];
  });
  if(softwareRender)await page.addInitScript(()=>{
   // The hosted runner has no GPU. Keep the real scene, materials, animation,

@@ -20,6 +20,7 @@ module.exports=async function checkCornerContacts(page,{mobile=false,check}){
    const w=__islandWorld,{body}=__eggyInput.playerRef,input=__eggyInput.input;
    const module=await import('./app/chunk-G7D6MVRW.js?v=foundation-safety-1');
    const original={...body.translation()},boardBefore=module.i.on,rows=[];
+   let phase='setup';
    const pause=ms=>new Promise(r=>setTimeout(r,ms));
    const frames=async count=>{for(let i=0;i<count;i++)await new Promise(requestAnimationFrame);};
    // Observe the required physical outcome, not an arbitrary RAF count: high
@@ -29,7 +30,7 @@ module.exports=async function checkCornerContacts(page,{mobile=false,check}){
     const start=performance.now();
     do{
      await frames(1);sample?.();
-     if(performance.now()-start>60000)throw Error('Corner movement did not complete within its deadline');
+     if(performance.now()-start>60000)throw Error('Corner movement did not complete within its deadline: '+JSON.stringify({phase,position:body.translation(),velocity:body.linvel(),input:{x:input.x,z:input.z},cue:document.querySelector('#park-contact-cue')?.outerHTML,trace:window.__qaContactFrames}));
     }while(performance.now()-start<ms||!reached());
    };
    const stop=()=>{input.x=input.z=0;input.run=false;body.setLinvel({x:0,y:0,z:0},true);};
@@ -50,11 +51,13 @@ module.exports=async function checkCornerContacts(page,{mobile=false,check}){
      const wall=p.x+p.footprint.maxX*1.15,x=wall+.405,z=p.z-1;
      await place(x,z);
      const before={...body.translation()};let intrusion=false;
+     phase=(riding?'skate':'walk')+' slide';
      direction(-.7,.7);
      await observe(800,()=>{const q=body.translation();if(w.ground(q.x,q.z)>q.y+1)intrusion=true;},()=>body.translation().z-before.z>1);
      const slide={...body.translation()};stop();
      // Push directly into the visibly closed facade: stopped, with a clear cue.
      await place(x,z);
+     phase=(riding?'skate':'walk')+' wall cue';
      // The cue expires after 450 ms. A CPU-only renderer can take seconds
      // between RAF callbacks, so sampling only at RAF may miss a real cue.
      // Observe its actual DOM visibility transition; keep the movement,
@@ -64,6 +67,7 @@ module.exports=async function checkCornerContacts(page,{mobile=false,check}){
      cueObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden']});
      try{direction(-1,0);await observe(700,null,()=>cue);}finally{cueObserver.disconnect();}
      const wallStop={...body.translation()};
+     phase=(riding?'skate':'walk')+' retreat';
      direction(1,0);await observe(600,null,()=>body.translation().x-wallStop.x>1);
      const retreat={...body.translation()};stop();await frames(3);
      rows.push({riding,before,slide,wall,wallStop,retreat,cue,intrusion,cueHidden:!document.querySelector('#park-contact-cue:not([hidden])')});
