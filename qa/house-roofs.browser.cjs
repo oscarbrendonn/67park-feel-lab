@@ -44,17 +44,18 @@ module.exports=async function checkHouseRoofs(page,{mobile=false,check}){
    });
   }
   async function moveTo(target){
-   return page.evaluate(async ({target,deadline})=>{
+   const result=await page.evaluate(async ({target,deadline})=>{
     const w=__islandWorld,b=__eggyInput.playerRef.body,input=__eggyInput.input,yaw=w.camera.userData.feelLab.yaw;
-    const started=performance.now();
+    const started=performance.now(),trace=[];
     // Use the existing analog control for the final approach. Full-strength
     // steering can overshoot the landing sample by >1m in one software-GPU
     // frame and invalidate the subsequent slope-height comparison.
     // Stay above the shipped controller's 0.08 analog dead zone.
-    try{while(b.translation().x<target-.04){const remaining=target-b.translation().x,strength=Math.max(.1,Math.min(1,remaining*3));input.x=Math.cos(yaw)*strength;input.z=-Math.sin(yaw)*strength;await new Promise(requestAnimationFrame);if(performance.now()-started>deadline)throw Error('Roof movement blocked: '+JSON.stringify(b.translation()));}}
+    try{while(b.translation().x<target-.04){const remaining=target-b.translation().x,strength=Math.max(.1,Math.min(1,remaining*3));input.x=Math.cos(yaw)*strength;input.z=-Math.sin(yaw)*strength;await new Promise(requestAnimationFrame);trace.push({ms:Math.round(performance.now()-started),p:{...b.translation()},v:{...b.linvel()},strength});if(trace.length>20)trace.shift();if(performance.now()-started>deadline)throw Error('Roof movement blocked: '+JSON.stringify(b.translation()));}}
     finally{input.x=input.z=0;const v=b.linvel();b.setLinvel({x:0,y:v.y,z:0},true);}
-    return {...b.translation()};
+    return {target,p:{...b.translation()},trace};
    },{target,deadline:actionTimeout});
+   console.log('ROOF_STEERING',JSON.stringify(process.env.PARK_ROUTE_TRACE==='1'?result:{target:result.target,p:result.p,maxFrameGap:Math.max(...result.trace.map((r,n)=>r.ms-(result.trace[n-1]?.ms??r.ms)))}));return result.p;
   }
   try{
    if(before.board)await page.keyboard.press('KeyV');

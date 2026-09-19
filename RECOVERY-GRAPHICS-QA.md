@@ -326,3 +326,64 @@ mandatory recovery test and cannot produce a release pass.
 
 Driver references: [Chromium SwiftShader modes](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/gpu/swiftshader.md),
 [ANGLE renderer switches](https://github.com/google/angle/blob/main/doc/DebuggingTips.md).
+
+Run `35472363289` verified Mesa llvmpipe rather than a silent fallback. All
+recovery cases passed, including a roughly 1.6-second room transition, and
+the coastal view stayed below the unchanged CPU stall budget. The release
+still failed at the roof-input route: the player overshot the first and second
+target before the test compared their slope heights. This was investigated
+rather than removing or relaxing that assertion.
+
+### Slow-frame physics correction
+
+The bounded trace exposed a real mismatch, not just fixture steering: the local
+controller integrated at most 50 ms, but variable-step Rapier integrated the
+previous velocity for up to 500 ms. The software trace reached body Y 32.91
+while approaching a roof at roughly Y 12.8. A second reproduction with real
+hardware rendering and deliberately delayed 150 ms RAF callbacks also failed
+the unchanged roof-height assertion. Evidence:
+`.qa-results/route-steering-software.log` and
+`.qa-results/route-steering-slowframes.log`.
+
+`app/simulation-step.js` now supplies the same finite 50 ms bound to both the
+controller and **variable-step** physics. Fixed-step simulation, server match
+clocks, roof geometry and route thresholds are untouched. Stalled time is
+dropped, not added to an unbounded catch-up queue. At 20 FPS or higher the
+integration step is unchanged; below that the local simulation slows rather
+than extrapolating a huge displacement from stale velocity. This does not make
+a 6 FPS device responsive or remove the need for real-device performance work.
+
+The identical 150 ms delayed-RAF roof route now passes: landing Y 12.817,
+summit Y 14.705, skate slope/exit and the closed ground-level wall all verified
+(`.qa-results/route-steering-bounded-slowframes.log`). The hardware roof plus
+shrub → awning → window cap → shop roof route also passes
+(`.qa-results/route-bounded-hardware.log`). Three regression tests cover normal
+frame rates, stalled/invalid deltas, jump integration and the shipped wiring;
+the full unit run is 121 tests, 120 passed, one optional fixture skipped.
+
+Focused reproduction with the existing isolated server on port 8521:
+`PARK_DIAGNOSTIC_FRAME_MS=150 PARK_DIAGNOSTIC_ROOF_ONLY=1 node qa/route-diagnostic.cjs`.
+Use `PARK_ROUTE_TRACE=1` for the last 20 steering samples per waypoint. These
+diagnostics do not replace the complete hosted regression/15-minute soak gate.
+
+## Physical Android camera acceptance
+
+`node qa/android-camera.mjs` uses the already-connected phone's actual game
+camera, trusted touch drags, Jump and joystick. It does not teleport the player,
+write camera/physics state or emulate a viewport. In
+`.qa-results/android-camera.json`, the latest 384 × 710 Redmi sample after
+reloading the bounded-physics build recorded:
+
+- 0.873 radians of yaw from the drag; zero continued yaw after release.
+- 1.72 units of jump travel; vertical lag bounded at 0.65, horizontal lag zero.
+- 379 newly drawn frames, largest sampling gap 66.5 ms, FOV unchanged at 55.
+- All ten touch start/end events trusted, zero new errors/context losses,
+  connections intact, controls released and in-game mute still enabled.
+
+The probe listeners and RAF are removed in `finally`. This short check covers
+look, jump and walking, not wall occlusion, a physical iPhone, or a second
+15-minute performance run. The earlier full Android soak remains separate.
+The separate trusted-joystick/Jump run also passed after reload: 1.96 units of
+walking, 1.63 units of jump rise, released controls, one connected test player
+and mute retained (`.qa-results/android-touch.json`). The phone confirmed the
+new `simulation-step.js` resource was loaded and reported no context loss.
