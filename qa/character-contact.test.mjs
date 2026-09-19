@@ -77,6 +77,19 @@ test('skate contacts preserve slopes, slide at a wall, and stay bounded after a 
   const r=resolveCharacterContact(sweep,base(wall,{x:-1,z:0},{x,z:1}));assert(r.blocked);assert(r.samples<30);assert(Object.values(r.position).every(Number.isFinite));
  }
 });
+test('a grounded skateboard can climb the real path curb after a slow gravity frame',()=>{
+ const rise=9.47878646850586-9.227547645568848,ground=x=>x>=0?rise:0;
+ for(const drop of [0,.1,.3,.5]){
+  const r=resolveCharacterContact(sweepRideContact,base(ground,{x:-1,z:0},{x:1,y:.555-drop,z:0},{x:6,y:-4,z:0}));
+  assert(!r.blocked,JSON.stringify({drop,r}));assert.equal(r.position.x,1);
+ }
+ // The correction needs a supported previous frame, not just a nearby floor.
+ const airborne=resolveCharacterContact(sweepRideContact,base(ground,{x:-1,y:1.4,z:0},{x:1,y:.15,z:0},{x:6,y:-4,z:0}));
+ assert(airborne.blocked);
+ for(const wall of [x=>x>=0?4:0,x=>x>=0&&x<=.15?6:0]){
+  const r=resolveCharacterContact(sweepRideContact,base(wall,{x:-1,z:0},{x:1,y:.15,z:0},{x:6,y:-4,z:0}));assert(r.blocked);assert(r.position.x<0);
+ }
+});
 test('building footprint follows rounded lower walls, not an oversized roof or square envelope',()=>{
  const wall=new T.CylinderGeometry(2,2,4,24);wall.translate(0,2,0);
  const roof=new T.BoxGeometry(8,.5,8);roof.translate(0,5,0);
