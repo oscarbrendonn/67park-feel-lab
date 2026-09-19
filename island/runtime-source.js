@@ -1464,7 +1464,7 @@ await entryStage(4,'Preparing the neighbourhood');
   cityProps60=await loadCityProps60({scene:sahne,renderer,sample:zeminVurusu,variant:'kimi'});
   // Optional additive layer: failure must not prevent the island from opening.
   try {
-    const {loadCentralBuildings68}=await import('./central-buildings-v68.js?v=76');
+    const {loadCentralBuildings68}=await import('./central-buildings-v68.js?v=corner-contact-1');
 await entryStage(5,'Preparing the central square');
     centralBuildings68=await loadCentralBuildings68({scene:sahne,renderer,sample:zeminVurusu,variant:'kimi'});
   } catch(e) { renderer.domElement.dataset.centralBuildings68='error: '+e.message; console.error('Central buildings',e); }

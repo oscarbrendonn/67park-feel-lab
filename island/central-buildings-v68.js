@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from './GLTFLoader.js';
 import {finishCityMaterial60} from './city-props-v60.js';
+import {installCentralBuildingContacts} from '../app/building-footprint.js?v=corner-contact-1';
 
 // Existing grass islands, world-space metres. No terrain is replaced.
 export const centralLayout68 = [
@@ -78,5 +79,5 @@ export async function loadCentralBuildings68({scene,renderer,sample,variant}){
   function update(){exposure.value=(variant==='kimi'?.88:1.27)/Math.max(.05,renderer.toneMappingExposure);}
   update();scene.add(group);group.updateMatrixWorld(true);
   Object.assign(renderer.domElement.dataset,{centralBuildings68:'ready',centralCount68:String(placements.length),centralDraws68:String(draws),centralLayout68:JSON.stringify(placements),toyBuildings70:'NW,N1'});
-  return {group,placements,cameraBlockers,obstacle,update};
+  return installCentralBuildingContacts({group,placements,cameraBlockers,obstacle,update},renderer);
 }

@@ -1,7 +1,7 @@
 # Foundation safety release
 
 Scope: Feel Lab only. The Kimi desktop/mobile repositories and their shared
-backend are unchanged. Pets and corner/terrain edits are not part of this release.
+backend are unchanged. Pets and terrain/model appearance are unchanged.
 Feel Lab uses its own browser guest-token namespace; the shared Pages origin must
 not overwrite identities used by the protected Kimi previews.
 
@@ -26,6 +26,15 @@ not overwrite identities used by the protected Kimi previews.
   WebGL loss permits browser restoration. No automatic reload loop.
 - Same runtime import URLs for dynamic party hooks and the main client, checked
   by tests to avoid duplicate input/animation stores after cache-key changes.
+- Corner contact uses the existing swept curb/stair/water rules but preserves
+  motion along a free wall tangent instead of zeroing both horizontal axes.
+  Walking, skating and swimming share the bounded resolver (at most three sweeps).
+- The 16 central buildings use static outlines from their visible lower walls,
+  including rounded corners, instead of oversized square bounding boxes. No new
+  model, texture or draw call is added. Other building models remain unchanged.
+- Persistently walking into a closed facade shows one small, non-interactive
+  blocked-path cue. It has one bounded timer, no frame loop, and cannot stop
+  movement if the optional cue itself fails.
 
 ## Release gate
 
@@ -35,7 +44,10 @@ The browser runner starts **its own loopback authority**. Never point fault/spam
 tests at the public service. It exercises desktop and 390×844 mobile Chromium,
 failed map load/retry, chat repetition, player safety, reconnect with a second
 peer, 100 home transitions per view, repeated actions, rapid outfit changes and
-an intentionally failed optional feature. CI adds a 15-minute mobile session.
+an intentionally failed optional feature. It also checks all 16 central building
+centres stay blocked, 64 previously square corner samples are open, and actual
+walking/skating input slides along a wall, stops at its closed facade, and can
+retreat. CI adds a 15-minute mobile session.
 The GPU-less hosted runner uses explicit SwiftShader with quarter-resolution
 canvas rendering and 256px shadows **inside the test only**, retaining the full
 scene, materials, UI and gameplay. Exceptions, lost contexts and stopped drawing

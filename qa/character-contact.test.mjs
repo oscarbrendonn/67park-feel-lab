@@ -1,0 +1,91 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import * as T from 'three';
+import {resolveCharacterContact,sweepRideContact,createContactFeedback} from '../app/character-contact.js';
+import {createBuildingFootprint,insideBuildingFootprint} from '../app/building-footprint.js';
+
+// Exercise the exact production curb/stair predicate, not a simplified mock.
+const source=fs.readFileSync(new URL('../app/chunk-OZ77422N.js',import.meta.url),'utf8');
+const begin=source.indexOf('var ke=Object.freeze'),end=source.indexOf('f();function nt(',begin);
+assert(begin>0&&end>begin,'Ground movement source anchor changed');
+const walk=Function(source.slice(begin,end)+';return tt;')();
+const base=(ground,from,to,velocity={x:3,y:0,z:3})=>({ground,from:{y:.555,...from},to:{y:.555,...to},velocity,wasGrounded:true});
+
+test('walking slides both directions along every wall orientation without entering it',()=>{
+ for(const axis of ['x','z'])for(const sign of [-1,1])for(const tangent of [-1,1]){
+  const other=axis==='x'?'z':'x',ground=(x,z)=>({x,z}[axis]*sign>=0?8:0);
+  const from={x:0,z:0,[axis]:-.41*sign},to={...from,[axis]:.3*sign,[other]:tangent};
+  const args=base(ground,from,to,{x:3,y:0,z:3});
+  const old=walk(args),next=resolveCharacterContact(walk,args);
+  assert(Math.abs(old.position[other])<.1,'Reproduction must stop before sliding');
+  assert.equal(next.kind,'slide');assert(Math.abs(next.position[other]-tangent)<1e-6);
+  assert(next.position[axis]*sign<=-.39);assert.equal(next.horizontal[axis],0);assert.equal(next.horizontal[other],3);
+ }
+});
+test('convex and concave corners allow retreat but never diagonal tunnelling',()=>{
+ for(const ground of [(x,z)=>x>=0&&z>=0?9:0,(x,z)=>x>=0||z>=0?9:0]){
+  let from={x:-.41,y:.555,z:-.41};
+  for(let i=0;i<1000;i++){
+   const to={...from,x:from.x+.12,z:from.z+.12};
+   const r=resolveCharacterContact(walk,base(ground,from,to));
+   assert(ground(r.position.x,r.position.z)===0);assert(r.samples<400);from=r.position;
+  }
+  const retreat=resolveCharacterContact(walk,base(ground,from,{...from,x:from.x-1,z:from.z-1},{x:-3,y:0,z:-3}));
+  assert(retreat.position.x<from.x-.9&&retreat.position.z<from.z-.9);
+ }
+});
+test('low curbs and stairs remain walkable; tall edges and thin walls stay closed',()=>{
+ const curb=(x,z)=>x>=0?.18:0;
+ const r=resolveCharacterContact(walk,base(curb,{x:-1,z:0},{x:1,z:0}));
+ assert.equal(r.blocked,false);assert(Math.abs(r.position.y-.735)<1e-6);
+ const stairs=(x,z)=>Math.floor(Math.max(0,x)*2)*.3;
+ const s=resolveCharacterContact(walk,{...base(stairs,{x:-.5,z:0},{x:2,z:0}),stairs:()=>true});
+ assert.equal(s.blocked,false);assert(s.position.y>1.7);
+ for(const ground of [(x,z)=>x>=0?4:0,(x,z)=>x>=0&&x<=.15?6:0]){
+  const r=resolveCharacterContact(walk,base(ground,{x:-1,z:0},{x:2,z:0}));assert(r.blocked);assert(r.position.x<0);
+ }
+});
+test('skate contacts preserve slopes, slide at a wall, and stay bounded after a bad frame',()=>{
+ const wall=(x,z)=>x>=0?8:0;
+ const r=resolveCharacterContact(sweepRideContact,base(wall,{x:-.41,z:0},{x:.5,z:1}));
+ assert.equal(r.kind,'slide');assert(r.position.x<0);assert(r.position.z>.95);
+ const slope=resolveCharacterContact(sweepRideContact,base((x,z)=>x*.35,{x:0,z:0},{x:1,y:1,z:0}));assert(!slope.blocked);
+ for(const sweep of [walk,sweepRideContact])for(const x of [1e9,NaN,Infinity]){
+  const r=resolveCharacterContact(sweep,base(wall,{x:-1,z:0},{x,z:1}));assert(r.blocked);assert(r.samples<30);assert(Object.values(r.position).every(Number.isFinite));
+ }
+});
+test('building footprint follows rounded lower walls, not an oversized roof or square envelope',()=>{
+ const wall=new T.CylinderGeometry(2,2,4,24);wall.translate(0,2,0);
+ const roof=new T.BoxGeometry(8,.5,8);roof.translate(0,5,0);
+ const shape=createBuildingFootprint([wall,roof]);assert(shape);assert(shape.points.length>=12);
+ assert(insideBuildingFootprint(shape,0,0));assert(insideBuildingFootprint(shape,1.8,0));
+ assert(!insideBuildingFootprint(shape,1.8,1.8));assert(!insideBuildingFootprint(shape,3,0));
+ assert.equal(createBuildingFootprint([roof]),null);wall.dispose();roof.dispose();
+});
+test('contact feedback uses one node and one timer across 1000 commands, then cleans up',()=>{
+ let created=0,clock=0,tasks=new Map(),seq=0;const node={hidden:true,style:{},setAttribute(){},remove(){this.removed=true;}};
+ const feedback=createContactFeedback({document:{createElement(){created++;return node;},body:{append(){}}},now:()=>clock,
+  schedule(fn){tasks.set(++seq,fn);return seq;},cancel(id){tasks.delete(id);}});
+ for(let i=0;i<1000;i++){clock+=16;feedback.update({contact:{blocked:true},moving:true,dt:.016});}
+ assert.equal(created,1);assert.equal(tasks.size,1);assert.equal(node.hidden,false);
+ feedback.update({contact:{blocked:false},moving:true,dt:.016});
+ // A free frame between wall contacts must not flicker the cue. It expires
+ // after contact ceases, and releasing the control hides it immediately.
+ clock+=451;const [id,expire]=tasks.entries().next().value;tasks.delete(id);expire();assert(node.hidden);
+ for(let i=0;i<10;i++)feedback.update({contact:{blocked:true},moving:true,dt:.016});assert(!node.hidden);
+ feedback.update({contact:{blocked:true},moving:false,dt:.016});assert(node.hidden);
+ for(let i=0;i<100;i++)feedback.update({contact:{blocked:true,kind:'slide',horizontal:{x:0,z:3}},moving:true,dt:.016});assert(node.hidden);
+ feedback.dispose();assert.equal(tasks.size,0);assert(node.removed);
+ const broken=createContactFeedback({document:{createElement(){throw Error('Optional UI failure');}}});
+ assert.doesNotThrow(()=>{for(let i=0;i<100;i++)broken.update({contact:{blocked:true},moving:true,dt:.05});});
+});
+test('production runtime shares contact resolver for walking and skating, no full-axis freeze',()=>{
+ assert(source.includes('resolveCharacterContact(tt,'));assert(source.includes('resolveCharacterContact(sweepRideContact,'));
+ assert(!source.includes('x:x.blocked?0:r.x'));
+ const bundle=fs.readFileSync(new URL('../island/runtime.bundle.js',import.meta.url),'utf8');
+ assert(bundle.includes('no=async options=>__centralContacts(await __centralBeforeContacts(options),options.renderer)'));
+ assert.equal((bundle.match(/async function no\(/g)||[]).length,1,'Bundled central loader anchor changed');
+ const release=fs.readFileSync(new URL('../.github/workflows/release.yml',import.meta.url),'utf8');
+ assert(release.includes('needs: regression'));assert(release.includes("PARK_SOAK_MS: '900000'"));
+});

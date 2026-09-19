@@ -5,7 +5,7 @@ import {cleanLowerPark} from '/67park-feel-lab/app/park-lower-cleanup.js?v=20260
 import {repairEastRoadEnd} from '/67park-feel-lab/app/east-road-end.js?v=corner-49b';
 import {installLobbyCourts} from '../app/lobby-courts.js';
 import {shortenKimiRightTip} from '/67park-feel-lab/app/kimi-right-curb-tip.js?v=coast-20a';
-import {installIslandSwimBoundary} from '/67park-feel-lab/app/island-swim-runtime.js?v=fleet-38';
+import {installIslandSwimBoundary} from '/67park-feel-lab/app/island-swim-runtime.js?v=corner-contact-1';
 import {installParcelGapQA} from '/67park-feel-lab/app/parcel-gap-qa.js';
 import {applyParcelPaving} from '/67park-feel-lab/app/island-parcel-paving.js';
 import {installParcelCornerQA} from '/67park-feel-lab/app/parcel-corner-qa.js';
@@ -1498,7 +1498,7 @@ await entryStage(4,'Preparing the neighbourhood');
   cityProps60=await loadCityProps60({scene:sahne,renderer,sample:zeminVurusu,variant:'kimi'});
   // Optional additive layer: failure must not prevent the island from opening.
   try {
-    const {loadCentralBuildings68}=await import('./central-buildings-v68.js?v=76');
+    const {loadCentralBuildings68}=await import('./central-buildings-v68.js?v=corner-contact-1');
 await entryStage(5,'Preparing the central square');
     centralBuildings68=await loadCentralBuildings68({scene:sahne,renderer,sample:zeminVurusu,variant:'kimi'});
   } catch(e) { renderer.domElement.dataset.centralBuildings68='error: '+e.message; console.error('Central buildings',e); }
