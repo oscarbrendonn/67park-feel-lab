@@ -2,7 +2,7 @@
 
 Isolated, experimental camera and movement fork for desktop and mobile browsers.
 
-Play: https://oscarbrendonn.github.io/67park-feel-lab/?v=feel-1
+Play: https://oscarbrendonn.github.io/67park-feel-lab/
 
 Based on `oscarbrendonn/67park-kimi-party` commit
 `991aac2b7f5b09fa5a0b1fde479c820aa17495f1`. Neither original desktop nor mobile
@@ -15,7 +15,8 @@ separate browser-storage keys in this fork.
 - Third-person starting pitch 20.6 degrees, 6.8-unit boom, 55-degree vertical FOV;
   portrait displays get up to one extra unit of distance. These are our trial
   values, not measured or claimed Eggy Party settings.
-- Main camera follows translation directly. Five obstruction probes retract
+- Horizontal following and manual look remain direct; vertical jump/fall
+  following is gently damped with bounded lag. Five obstruction probes retract
   safely and ease back out with a brief hold against corner oscillation. No
   automatic sprint zoom or camera shake in this profile.
 - Main horizontal acceleration and direction changes are bounded; playback
@@ -29,9 +30,15 @@ separate browser-storage keys in this fork.
 
 ## Verification
 
-See [FEEL-LAB-QA.md](FEEL-LAB-QA.md). Other QA documents were inherited from the
-source repository and are not claims of new verification for this fork.
+See [RECOVERY-GRAPHICS-QA.md](RECOVERY-GRAPHICS-QA.md) for connection recovery,
+working graphics levels, camera changes, acceptance results and remaining real
+device checks. [FEEL-LAB-QA.md](FEEL-LAB-QA.md) describes the earlier feel profile;
+older QA documents are historical evidence, not certification of this release.
 
 This is a playtest build, not a guarantee for all phones or 100-player lobbies.
-The live preview network configuration still uses the existing test backend;
-this fork does not redeploy or change that backend or its physics.
+Lobby capacity remains 16. Low/Medium/High graphics change actual resolution and
+shadow rendering; Automatic retains the existing adaptive profile.
+
+The dedicated test backend must be upgraded before publishing a client that
+requires protocol negotiation. Its data directory and tunnel stay unchanged.
+It remains a test service, not a permanent production hosting arrangement.

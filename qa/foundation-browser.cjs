@@ -46,10 +46,30 @@ async function run(mobile){
   const seen=new WeakSet();
   setInterval(()=>{
    const world=window.__islandWorld,r=world?.renderer;
-   if(r&&!seen.has(r)){seen.add(r);r.setPixelRatio(.25);}
+   if(r&&!seen.has(r)){
+    seen.add(r);const setRatio=r.setPixelRatio;
+    // R3F/adaptive resolution can otherwise silently undo the CPU-test cap.
+    // Manual quality changes still exercise their actual framebuffer sizes.
+    r.setPixelRatio=function(value){
+     let level='auto';try{level=JSON.parse(localStorage.getItem('67park.feel-lab.player-settings.v1')||'{}').graphics||'auto'}catch{}
+     return setRatio.call(this,level==='auto'?.25:value);
+    };
+    r.setPixelRatio(.25);
+   }
+   // The product graphics module retains the original setter internally.
+   // Switching High -> Automatic can therefore bypass the public wrapper.
+   // Reassert only the TEST automatic cap; manual framebuffer tests stay real.
+   if(r){
+    let level='auto';try{level=JSON.parse(localStorage.getItem('67park.feel-lab.player-settings.v1')||'{}').graphics||'auto'}catch{}
+    if(level==='auto'&&r.getPixelRatio()!==.25)r.setPixelRatio(.25);
+   }
    const scene=world?.scene||window.__eggyScene;
    scene?.traverse(o=>{
     if(!o.shadow||seen.has(o))return;seen.add(o);
+    const setSize=o.shadow.mapSize.set;
+    // Graphics switching also restores authored shadow sizes. Keep only this
+    // CPU-only harness capped; never relax geometry or draw-progress checks.
+    o.shadow.mapSize.set=function(x,y){return setSize.call(this,Math.min(256,x),Math.min(256,y))};
     o.shadow.mapSize.set(256,256);o.shadow.map?.dispose();o.shadow.map=null;o.shadow.needsUpdate=true;
    });
   },250);
@@ -79,6 +99,11 @@ async function run(mobile){
    assert(after.gap<stallMs,name+' frame stall '+after.gap);assert.equal(after.losses,0);
    assert.equal(after.party.disabled,false);assert.equal(after.home.failed,false);assert.deepEqual(errors,[]);
    console.log('PASS',mobile,name,JSON.stringify({frames:after.frame-before.frame,maxGap:Math.round(after.gap),programs:after.programs}));
+  }
+  await require('./recovery-graphics.browser.cjs')(page,{mobile,check});
+  if(softwareRender){
+   await page.waitForFunction(()=>__islandWorld.renderer.getPixelRatio()===.25);
+   console.log('CPU_RASTER_CAP',await page.evaluate(()=>{const r=__islandWorld.renderer;return {ratio:r.getPixelRatio(),width:r.domElement.width,height:r.domElement.height}}));
   }
   await require('./corner-contacts.browser.cjs')(page,{mobile,check});
   await require('./curb-traversal.browser.cjs')(page,{mobile,check});

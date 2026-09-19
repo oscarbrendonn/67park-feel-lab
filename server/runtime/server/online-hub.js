@@ -35,7 +35,7 @@ export class OnlineHub{
   ws.on('close',()=>{if(p[key]!==ws)return;p[key]=null;if(channel==='online'){p.offlineAt=this.now();p.control=null;this.roomChanged(this.rooms.get(p.roomId));}else{p.carryTarget='';this.lobbyBroadcast(this.lobbies.get(p.lobbyId),{t:'leave',id:p.id},p.id);}});
  }
  profile(p,m){const name=clean(m.name,16);if(name)p.name=name;if(typeof m.combo==='string'&&m.combo.length<=700){try{const eq=JSON.parse(m.combo);if(eq&&typeof eq.base==='string'&&/^[a-zA-Z0-9_-]{1,40}$/.test(eq.base))p.combo=m.combo;}catch{}}}
- lobbyMessage(p,m){const l=this.lobbies.get(p.lobbyId);if(m.t==='hello'){this.profile(p,m);this.lobbyBroadcast(l,{t:'meta',...this.publicPlayer(p)});this.state(p);}else if(m.t==='s'){
+ lobbyMessage(p,m){if(m.t==='ping'){this.send(p.lobbySocket,{t:'pong',at:m.at,now:this.now()});return;}const l=this.lobbies.get(p.lobbyId);if(m.t==='hello'){this.profile(p,m);this.lobbyBroadcast(l,{t:'meta',...this.publicPlayer(p)});this.state(p);}else if(m.t==='s'){
    if(this.now()-p.stateAt<65||this.rooms.get(p.roomId)?.sim)return;
    if(!Array.isArray(m.p)||m.p.length!==3||!m.p.every(x=>finite(x,1000))||!finite(m.ry,100000))return;
    const requested=clean(m.cg,64),target=requested&&requested!==p.id&&l.members.has(requested)?this.players.get(requested):null;

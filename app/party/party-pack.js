@@ -1,6 +1,6 @@
 import {createParkLaunchers} from "./park-launchers.js?v=hatch-ends-1";
 import {createParkPets} from '../pets/park-pets.js?v=pets-soft-2';
-import {createHousing} from '../housing.js?v=plaza-climb-1';
+import {createHousing} from '../housing.js?v=recovery-graphics-1';
 import '../chat-send-focus.js?v=homes-1';
 import {createParkSocialToys} from "./park-social-toys.js?v=balloon-lift-2";
 import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
@@ -11,7 +11,7 @@ import {installSkateRailFinish} from './skate-rail-finish.js?v=1';
 // Loaded after app/main.js. Config: window.__partyConfig = {runtime: "<runtime ?v>", carry: "<carry ?v>"}.
 import * as THREE from 'three';
 import {playerSettings as settings,savePlayerSettings as saveSettings} from '../player-settings.js';
-import {installPlayerSettings} from './settings-panel.js?v=foundation-safety-1';
+import {installPlayerSettings} from './settings-panel.js?v=recovery-graphics-1';
 import { createPartyAudio } from './party-audio.js?v=skate-sfx-1';
 import {createFeatureBoundary} from '../feature-boundary.js';
 

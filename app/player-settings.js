@@ -1,13 +1,14 @@
 // Browser-local preferences only. No changes to physics, accounts or saved outfits.
-export const SETTINGS_VERSION = 'settings-2';
+export const SETTINGS_VERSION = 'settings-3';
 export const SETTINGS_KEY = '67park.feel-lab.player-settings.v1';
-export const DEFAULTS = Object.freeze({mouseSensitivity:1,touchSensitivity:1,desktopButtonSize:1,mobileButtonSize:1,sfx:.8,ambience:1,showChat:true,showNames:true,juice:true,pads:true,haptics:true});
+export const DEFAULTS = Object.freeze({mouseSensitivity:1,touchSensitivity:1,desktopButtonSize:1,mobileButtonSize:1,sfx:.8,ambience:1,showChat:true,showNames:true,juice:true,pads:true,haptics:true,graphics:'auto'});
 const ranges = {mouseSensitivity:[.25,2],touchSensitivity:[.25,2],desktopButtonSize:[.8,1.2],mobileButtonSize:[.8,1.2],sfx:[0,1],ambience:[0,1]};
 export function sanitizeSettings(value) {
  const out={...DEFAULTS};
  if(!value||typeof value!=='object'||Array.isArray(value))return out;
  for(const key of Object.keys(DEFAULTS)){
-  if(ranges[key]){const n=value[key];if(typeof n==='number'&&Number.isFinite(n))out[key]=Math.min(ranges[key][1],Math.max(ranges[key][0],n));}
+  if(key==='graphics'){if(['auto','low','medium','high'].includes(value[key]))out[key]=value[key];}
+  else if(ranges[key]){const n=value[key];if(typeof n==='number'&&Number.isFinite(n))out[key]=Math.min(ranges[key][1],Math.max(ranges[key][0],n));}
   else if(typeof value[key]==='boolean')out[key]=value[key];
  }
  return out;

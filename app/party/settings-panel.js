@@ -3,7 +3,7 @@ import {BASICS_VERSION, readPlayerDiagnostics, makeBugReport} from '../player-di
 import {installSafetyControls} from '../social-safety.js';
 
 export function installPlayerSettings({sfx,isTouch}){
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./settings-panel.css?v=foundation-basics-1',import.meta.url).href;document.head.append(sheet);
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./settings-panel.css?v=recovery-graphics-1',import.meta.url).href;document.head.append(sheet);
  const gear=document.createElement('button');gear.id='party-settings-btn';gear.type='button';gear.textContent='Settings';gear.setAttribute('aria-label','Party settings');gear.setAttribute('aria-expanded','false');
  gear.hidden=true;
  const panel=document.createElement('div');panel.id='party-settings';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','settings-title');
@@ -13,6 +13,7 @@ export function installPlayerSettings({sfx,isTouch}){
  panel.innerHTML=`<div class="party-card" tabindex="-1"><div class="party-head"><div><small>MAKE IT YOURS</small><h2 id="settings-title">Settings</h2></div><button type="button" class="party-close" aria-label="Close settings">×</button></div>
  <p class="party-intro">Your controls. Your sound.</p><div class="party-save-status"><p id="settings-save-status" role="status"></p><button type="button" data-action="retry-save" hidden>Try saving again</button></div>
  <section><h3>Camera & controls</h3>${slider('mouseSensitivity','Mouse sensitivity',25,200,5)}${slider('touchSensitivity','Touch sensitivity',25,200,5)}${slider(sizeKey,'Button size',80,120,5)}<p class="party-hint">100% keeps the original feel. Sensitivity applies to free-look cameras; aiming games keep their own controls.</p></section>
+ <section><h3>Graphics</h3><label class="party-row" for="setting-graphics"><span>Graphics quality</span><select id="setting-graphics" data-setting="graphics" aria-label="Graphics quality"><option value="auto">Automatic</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><p class="party-hint">Low: lighter resolution, no real-time shadows. Medium: balanced resolution and shadows. High: sharper resolution and original shadows. Automatic keeps the existing adaptive resolution. Characters, controls and online rules stay the same.</p></section>
  <section><h3>Audio</h3>${slider('sfx','Sound effects',0,100,5)}${slider('ambience','Ambience & park music',0,100,5)}<p class="party-hint" id="settings-muted" hidden>Sound is muted with the speaker button. <button type="button" data-action="unmute">Turn sound on</button></p></section>
  <section><h3>Social</h3>${toggle('showChat','Show chat messages')}${toggle('showNames','Show player names')}<p class="party-hint">Only changes what you see. Other players keep their own preferences.</p></section>
  <section><h3>Party feel</h3>${toggle('juice','Bouncy moves')}${toggle('pads','Jump pads')}${isTouch&&typeof navigator.vibrate==='function'?toggle('haptics','Vibration'):''}</section>
@@ -37,7 +38,8 @@ export function installPlayerSettings({sfx,isTouch}){
   if(lastNames!==settings.showNames){lastNames=settings.showNames;const scene=window.__eggyScene;scene?.traverse?.(o=>{if(o.userData?.botLabel)o.visible=settings.showNames})}
   for(const el of panel.querySelectorAll('[data-setting]')){
    const key=el.dataset.setting;
-   if(el.type==='range'){el.value=String(Math.round(settings[key]*100));panel.querySelector(`[data-output="${key}"]`).textContent=el.value+'%';el.setAttribute('aria-valuetext',el.value+' percent')}
+   if(el.tagName==='SELECT')el.value=settings[key];
+   else if(el.type==='range'){el.value=String(Math.round(settings[key]*100));panel.querySelector(`[data-output="${key}"]`).textContent=el.value+'%';el.setAttribute('aria-valuetext',el.value+' percent')}
    else el.setAttribute('aria-checked',String(settings[key]));
   }
   let muted=false;try{muted=localStorage.getItem('67park-feel-lab-muted')==='1'}catch{}
@@ -63,7 +65,7 @@ export function installPlayerSettings({sfx,isTouch}){
  panel.querySelector('.party-close').addEventListener('click',()=>open(false));
  panel.addEventListener('click',e=>{if(e.target===panel)open(false)});
  panel.addEventListener('input',e=>{const key=e.target.dataset.setting;if(!key||e.target.type!=='range')return;setPlayerSetting(key,Number(e.target.value)/100);if(key==='sfx'){sfx.ensure();sfx.setVolume(settings.sfx)}});
- panel.addEventListener('change',e=>{if(e.target.dataset.setting==='sfx')sfx.play('jump')});
+ panel.addEventListener('change',e=>{if(e.target.dataset.setting==='sfx')sfx.play('jump');if(e.target.dataset.setting==='graphics')setPlayerSetting('graphics',e.target.value)});
  panel.addEventListener('click',async e=>{
   const el=e.target.closest('button');if(!el)return;
   if(el.matches('[role=switch]')){setPlayerSetting(el.dataset.setting,!settings[el.dataset.setting]);sfx.play('click');return}
@@ -86,7 +88,7 @@ export function installPlayerSettings({sfx,isTouch}){
   if(panel.hidden)return;
   if(e.key==='Escape'){e.preventDefault();open(false)}
   else if(e.key==='Tab'){
-   const items=[...panel.querySelectorAll('button,input,a[href],textarea,summary')].filter(n=>!n.disabled&&n.getClientRects().length);
+   const items=[...panel.querySelectorAll('button,input,select,a[href],textarea,summary')].filter(n=>!n.disabled&&n.getClientRects().length);
    const first=items[0],last=items.at(-1);
    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}
    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}

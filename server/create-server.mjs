@@ -6,6 +6,7 @@ import {WebSocketServer} from 'ws';
 import {installHousing} from './housing.mjs';
 import {installSocialSafety} from './social-safety.mjs';
 import {installLobbyLoadGuard} from './lobby-load-guard.mjs';
+import {SERVER_PROTOCOL,requestedProtocol,compatibleProtocol} from '../app/protocol-version.js';
 register('./three-loader.mjs',import.meta.url);
 
 // Dedicated preview service. Never imports serve.mjs or opens the live social store.
@@ -25,12 +26,12 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
   if(limits.size>2048)for(const [key,value]of limits)if(now-value.at>60000)limits.delete(key);
   return ++entry.n>120;
  };
- const route=req=>/^\/(codex|kimi)\/(api\/session|online|ws|health)$/.exec(req.url||'');
+ const route=req=>/^\/(codex|kimi)\/(api\/session|online|ws|health)$/.exec((req.url||'').split('?')[0]);
  const headers=origin=>({'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Vary':'Origin',...(allowed.has(origin)?{'Access-Control-Allow-Origin':origin}:{} )});
  const server=http.createServer((req,res)=>{
   const origin=req.headers.origin;
   const reply=(status,value)=>{res.writeHead(status,headers(origin));res.end(JSON.stringify(value));};
-  if(req.url==='/health'&&req.method==='GET'){const ok=Date.now()-lastHealthy<2000&&!safety.metrics.storageError&&![...hubs.values()].some(h=>h.storageError);reply(ok?200:503,{ok,revision:'foundation-safety-1',faults,lobbyFaults:loadGuard.metrics.rosterFailures,roomFaults:[...hubs.values()].reduce((n,h)=>n+(h.roomFaults?.length||0),0),variants:Object.fromEntries([...hubs].map(([v,h])=>[v,{online:[...h.players.values()].filter(p=>p.online).length,rooms:h.rooms.size}]))});return;}
+  if(req.url==='/health'&&req.method==='GET'){const ok=Date.now()-lastHealthy<2000&&!safety.metrics.storageError&&![...hubs.values()].some(h=>h.storageError);reply(ok?200:503,{ok,revision:SERVER_PROTOCOL.build,protocol:SERVER_PROTOCOL,faults,lobbyFaults:loadGuard.metrics.rosterFailures,roomFaults:[...hubs.values()].reduce((n,h)=>n+(h.roomFaults?.length||0),0),variants:Object.fromEntries([...hubs].map(([v,h])=>[v,{online:[...h.players.values()].filter(p=>p.online).length,rooms:h.rooms.size}]))});return;}
   const match=route(req);if(!match){reply(404,{error:'Not found'});return;}
   if(!allowed.has(origin)){reply(403,{error:'Origin not allowed'});return;}
   if(req.method==='OPTIONS'){
@@ -42,6 +43,7 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
   if(!hub){reply(404,{error:'Unknown preview variant'});return;}
   if(match[2]==='health'){reply(200,{ok:!faults});return;}
   if(match[2]!=='api/session'){reply(426,{error:'WebSocket required'});return;}
+  if(!compatibleProtocol(SERVER_PROTOCOL,requestedProtocol(req.url))){reply(426,{error:'Game version changed. Reload the latest game; your saved character is safe.',code:'CLIENT_UPDATE_REQUIRED',protocol:SERVER_PROTOCOL});return;}
   if(limited(req)){reply(429,{error:'Too many connection attempts; please wait.'});return;}
   const auth=String(req.headers.authorization||'');
   const token=auth.startsWith('Bearer ')?auth.slice(7):'';
@@ -49,7 +51,7 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
   if(!hub.lookup(token)&&hub.players.size>=maxPlayers){reply(503,{error:'Preview is full'});return;}
   try{
    const session=hub.session(token||undefined);
-   reply(200,{id:session.player.id,friendCode:session.player.friendCode,token:session.token,mode:'isolated-guest-test',persistentAccount:false,shareOrigin:'https://oscarbrendonn.github.io/67park-feel-lab/'});
+   reply(200,{id:session.player.id,friendCode:session.player.friendCode,token:session.token,protocol:SERVER_PROTOCOL,mode:'isolated-guest-test',persistentAccount:false,shareOrigin:'https://oscarbrendonn.github.io/67park-feel-lab/'});
   }catch{reply(503,{error:'Session unavailable'});}
  });
  const wss=new WebSocketServer({noServer:true,maxPayload:8192,perMessageDeflate:false,handleProtocols:protocols=>protocols.has('67park-v1')?'67park-v1':false});
@@ -60,6 +62,7 @@ export async function createPreviewServer({origins=['https://oscarbrendonn.githu
   const token=protocols[1].slice(6),hub=hubs.get(match[1]),player=tokenPattern.test(token)&&hub?.lookup(token);
   if(!player){reject();return;}
   wss.handleUpgrade(req,socket,head,ws=>{
+   if(!compatibleProtocol(SERVER_PROTOCOL,requestedProtocol(req.url))){ws.close(4009,'Game version changed. Reload the latest game.');return;}
    ws.alive=true;ws.on('error',()=>{});ws.on('pong',()=>{ws.alive=true;});
    try{hub.attach(player,ws,match[2]==='ws'?'lobby':'online');}
    catch{faults++;ws.close(1011,'Connection setup failed; please reconnect.');}

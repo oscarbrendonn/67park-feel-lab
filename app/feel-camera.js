@@ -1,5 +1,5 @@
-// Experimental feel-lab profile. Positions follow the player directly; only
-// release from an occluder is damped. No shake, speed zoom or auto-yaw.
+// Horizontal position and manual look remain direct. Only vertical travel and
+// release from an occluder are damped. No shake, speed zoom or auto-yaw.
 export const FEEL_CAMERA = Object.freeze({pitch:.36,distance:6.8,fov:55,targetHeight:1.15,portraitExtra:1.0,padding:.24,releaseRate:8,releaseHold:.10});
 const finitePoint = p => p && [p.x,p.y,p.z].every(Number.isFinite);
 export function feelCameraPose(feet,yaw,pitch,distance=FEEL_CAMERA.distance,aspect=1.5){
@@ -10,8 +10,10 @@ export function feelCameraPose(feet,yaw,pitch,distance=FEEL_CAMERA.distance,aspe
 }
 export function createCameraBoom(){
  let length=null,last=null,hold=0;
+ const vertical=createVerticalCameraTarget();
  return {
-  reset(){length=null;last=null;hold=0;},
+  reset(){length=null;last=null;hold=0;vertical.reset();},
+  pose(feet,yaw,pitch,distance,aspect,dt){return feelCameraPose(vertical.step(feet,dt),yaw,pitch,distance,aspect);},
   step(target,desired,dt,cast){
    if(!finitePoint(target)||!finitePoint(desired))return null;
    dt=Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0));
@@ -37,6 +39,26 @@ export function createCameraBoom(){
    length=Math.min(length,safe);last={...target};
    return {x:target.x+direction.x*length,y:target.y+direction.y*length,z:target.z+direction.z*length,distance:length,occluded:safe<wanted-.01};
   }
+ };
+}
+
+export function createVerticalCameraTarget(){
+ let previous=null,y=null;
+ return {
+  reset(){previous=null;y=null;},
+  step(feet,dt){
+   if(!finitePoint(feet))return previous?{...previous,y}:feet;
+   const jump=!previous||Math.hypot(feet.x-previous.x,feet.y-previous.y,feet.z-previous.z)>8;
+   if(jump||y===null)y=feet.y;
+   else{
+    const seconds=Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0));
+    // Reuse the established camera release time constant. Bound vertical lag
+    // during a fall so the avatar and the landing area never leave the frame.
+    y+=(feet.y-y)*(1-Math.exp(-FEEL_CAMERA.releaseRate*seconds));
+    y=Math.max(feet.y-.65,Math.min(feet.y+.65,y));
+   }
+   previous={...feet};return {x:feet.x,y,z:feet.z};
+  },
  };
 }
 

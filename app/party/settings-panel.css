@@ -22,6 +22,7 @@
 #party-settings output{color:#81707f;font-size:12px;min-width:38px;text-align:right;font-variant-numeric:tabular-nums}
 #party-settings input[type=range]{grid-column:1/-1;width:100%;margin:0;min-height:32px;accent-color:#e978aa;cursor:pointer;touch-action:pan-y}
 #party-settings .party-row{font-size:14px;border-color:#ede6dc;min-height:44px;padding:4px 0}
+#party-settings select{min-height:44px;max-width:52%;border:1px solid #d8ccc4;border-radius:12px;padding:8px;background:#fff;color:#514954;font:600 16px system-ui;cursor:pointer}
 #party-settings .party-toggle{flex:none;width:58px;height:36px}
 #party-settings .party-toggle i{width:26px;height:26px;top:3px;left:3px;transition:transform 120ms ease-out}
 #party-settings .party-toggle[aria-checked=true] i{left:3px;transform:translateX(23px)}
@@ -32,7 +33,7 @@
 #party-settings button:not(.party-toggle):not(.party-close),#party-settings .party-help-actions a{cursor:pointer;background:#fff;border:1px solid #e5d8d0;border-radius:13px;padding:10px 12px;min-height:44px;color:#554b57;font:650 13px system-ui;text-decoration:none;box-sizing:border-box}
 #party-settings .party-reset{width:100%;margin-top:10px;background:#fbedf1!important}
 #party-settings button:active{transform:scale(.97)}
-#party-settings :is(button,input,summary,a,textarea):focus-visible{outline:3px solid #668fb1;outline-offset:3px}
+#party-settings :is(button,input,select,summary,a,textarea):focus-visible{outline:3px solid #668fb1;outline-offset:3px}
 #party-settings .party-report-label{display:block;margin:12px 0 6px;font-size:12px}
 #party-settings textarea{display:block;box-sizing:border-box;width:100%;resize:vertical;padding:10px;border:1px solid #d8ccc4;border-radius:10px;font:16px/1.4 system-ui;background:#fff;color:#514954}
 #party-settings .party-help-actions{display:flex;flex-wrap:wrap;gap:8px}

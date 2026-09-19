@@ -1,3 +1,4 @@
+import {SERVER_PROTOCOL,requestedProtocol,compatibleProtocol} from '../app/protocol-version.js';
 // Bounded single-lobby traffic. Does not alter mini-game capacities or simulation.
 export function installLobbyLoadGuard(app,{
  capacity=16,nearby=16,farInterval=1000,refreshInterval=120,
@@ -51,15 +52,15 @@ export function installLobbyLoadGuard(app,{
  const handlers=app.server.listeners('request'),allowed=new Set(origins),renewals=new Map();
  for(const handler of handlers)app.server.removeListener('request',handler);
  const wrapped=(req,res)=>{
-  const match=/^\/(codex|kimi)\/api\/session$/.exec(req.url||''),auth=String(req.headers.authorization||'');
+  const match=/^\/(codex|kimi)\/api\/session$/.exec((req.url||'').split('?')[0]),auth=String(req.headers.authorization||'');
   const token=auth.startsWith('Bearer ')?auth.slice(7):'',hub=match&&app.hubs.get(match[1]);
-  const valid=req.method==='GET'&&allowed.has(req.headers.origin)&&/^[A-Za-z0-9_-]{43}$/.test(token)&&hub?.lookup(token);
+  const valid=req.method==='GET'&&allowed.has(req.headers.origin)&&/^[A-Za-z0-9_-]{43}$/.test(token)&&hub?.lookup(token)&&compatibleProtocol(SERVER_PROTOCOL,requestedProtocol(req.url));
   if(valid){
    const now=Date.now();let row=renewals.get(token);if(!row||now-row.at>=60000){row={at:now,n:0};renewals.set(token,row)}
    if(renewals.size>512)for(const [key,v]of renewals)if(now-v.at>60000)renewals.delete(key);
    const headers={'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Vary':'Origin','Access-Control-Allow-Origin':req.headers.origin};
    if(++row.n>12){res.writeHead(429,{...headers,'Retry-After':'60'});res.end(JSON.stringify({error:'Too many reconnect attempts; please wait.'}));return}
-   try{const session=hub.session(token);metrics.recoveredSessions++;res.writeHead(200,headers);res.end(JSON.stringify({id:session.player.id,friendCode:session.player.friendCode,token:session.token,mode:'isolated-guest-test',persistentAccount:false,shareOrigin:'https://oscarbrendonn.github.io/67park-feel-lab/'}));return}catch{res.writeHead(503,headers);res.end(JSON.stringify({error:'Session unavailable'}));return}
+   try{const session=hub.session(token);metrics.recoveredSessions++;res.writeHead(200,headers);res.end(JSON.stringify({id:session.player.id,friendCode:session.player.friendCode,token:session.token,protocol:SERVER_PROTOCOL,mode:'isolated-guest-test',persistentAccount:false,shareOrigin:'https://oscarbrendonn.github.io/67park-feel-lab/'}));return}catch{res.writeHead(503,headers);res.end(JSON.stringify({error:'Session unavailable'}));return}
   }
   for(const handler of handlers)handler.call(app.server,req,res);
  };

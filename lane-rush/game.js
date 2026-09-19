@@ -1,3 +1,4 @@
+import {installGraphicsQuality as __installGraphicsQuality} from "../app/graphics-quality.js";
 import {createMinigameFeedback} from "../app/minigame-feedback.js";
 const feelFeedback=createMinigameFeedback();
 import * as THREE from 'three';
@@ -8,7 +9,7 @@ import {CHARACTER_CONTROL as profile,characterDirection,characterCameraPose} fro
 import {poseCarryHands} from '../app/carry-hand-pose.js?v=carry-hands-1';
 
 const $=s=>document.querySelector(s),canvas=$('#game'),placeEl=$('#place'),timerEl=$('#timer'),hint=$('#hint'),countdown=$('#countdown'),restart=$('#restart');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+const renderer=__installGraphicsQuality(new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'}));
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
 const scene=new THREE.Scene();scene.background=new THREE.Color('#c5cddd');scene.fog=new THREE.Fog('#c5cddd',65,160);
