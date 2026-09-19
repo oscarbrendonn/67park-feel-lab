@@ -1662,4 +1662,4 @@ return installLobbyCourts(installHouseRoofSupports(installIslandSwimBoundary(wor
 
 } finally {islandStartupAssets.close();renderer.domElement.dataset.islandStartupAssets=JSON.stringify(islandStartupAssets.stats);}
 }
-import {installHouseRoofSupports} from '../app/house-roof-support.js?v=house-roofs-1';
+import {installHouseRoofSupports} from '../app/house-roof-support.js?v=plaza-climb-1';

@@ -1,4 +1,5 @@
 const assert=require('node:assert/strict');
+const actionTimeout=process.env.PARK_SOFTWARE_RENDER==='1'?240000:45000;
 
 module.exports=async function checkHouseRoofs(page,{mobile=false,check}){
  await check('all house roofs match their rendered surfaces, with bounded shared indices',async()=>{
@@ -43,34 +44,34 @@ module.exports=async function checkHouseRoofs(page,{mobile=false,check}){
    });
   }
   async function moveTo(target){
-   return page.evaluate(async target=>{
+   return page.evaluate(async ({target,deadline})=>{
     const w=__islandWorld,b=__eggyInput.playerRef.body,input=__eggyInput.input,yaw=w.camera.userData.feelLab.yaw;
     input.x=Math.cos(yaw);input.z=-Math.sin(yaw);const started=performance.now();
-    try{while(b.translation().x<target){await new Promise(requestAnimationFrame);if(performance.now()-started>45000)throw Error('Roof movement blocked: '+JSON.stringify(b.translation()));}}
+    try{while(b.translation().x<target){await new Promise(requestAnimationFrame);if(performance.now()-started>deadline)throw Error('Roof movement blocked: '+JSON.stringify(b.translation()));}}
     finally{input.x=input.z=0;const v=b.linvel();b.setLinvel({x:0,y:v.y,z:0},true);}
     return {...b.translation()};
-   },target);
+   },{target,deadline:actionTimeout});
   }
   try{
    if(before.board)await page.keyboard.press('KeyV');
    await place();await jump();
-   await page.waitForFunction(()=>{const b=__eggyInput.playerRef.body,p=b.translation();return p.y>11.15&&b.linvel().y<2.8;},null,{timeout:45000});
+   await page.waitForFunction(()=>{const b=__eggyInput.playerRef.body,p=b.translation();return p.y>11.15&&b.linvel().y<2.8;},null,{timeout:actionTimeout});
    await jump();await moveTo(163.35);
-   await page.waitForFunction(()=>{const w=__islandWorld,b=__eggyInput.playerRef.body,p=b.translation(),roof=w.roofSupports.sample(p.x,p.z);return roof&&roof.y>w.terrainGround(p.x,p.z)+2.7&&Math.abs(p.y-roof.y-.555)<.08&&Math.abs(b.linvel().y)<.5;},null,{timeout:45000});
+   await page.waitForFunction(()=>{const w=__islandWorld,b=__eggyInput.playerRef.body,p=b.translation(),roof=w.roofSupports.sample(p.x,p.z);return roof&&roof.y>w.terrainGround(p.x,p.z)+2.7&&Math.abs(p.y-roof.y-.555)<.08&&Math.abs(b.linvel().y)<.5;},null,{timeout:actionTimeout});
    const landed=await page.evaluate(()=>({...__eggyInput.playerRef.body.translation()}));
    await moveTo(166.9);
    await page.waitForFunction(()=>{const p=__eggyInput.playerRef.body.translation();return Math.abs(p.y-__islandWorld.roofSupports.sample(p.x,p.z).y-.555)<.08;});
    const summit=await page.evaluate(()=>({...__eggyInput.playerRef.body.translation()}));
    assert(summit.y>landed.y+1.2,JSON.stringify({landed,summit}));
-   await page.screenshot({path:'.qa-results/roof-'+(mobile?'mobile':'desktop')+'.png'});
+   await page.screenshot({path:'.qa-results/roof-'+(mobile?'mobile':'desktop')+'.png',timeout:90000});
    if(mobile)await page.getByRole('button',{name:'Skate',exact:true}).tap();else await page.keyboard.press('KeyV');
    await moveTo(167.9);
-   await page.waitForFunction(()=>{const p=__eggyInput.playerRef.body.translation();return Math.abs(p.y-__islandWorld.roofSupports.sample(p.x,p.z).y-.555)<.12;},null,{timeout:45000});
+   await page.waitForFunction(()=>{const p=__eggyInput.playerRef.body.translation();return Math.abs(p.y-__islandWorld.roofSupports.sample(p.x,p.z).y-.555)<.12;},null,{timeout:actionTimeout});
    const skated=await page.evaluate(async()=>({p:{...__eggyInput.playerRef.body.translation()},board:(await import('./app/chunk-G7D6MVRW.js?v=foundation-safety-1')).i.on}));
    assert(skated.board&&skated.p.x>summit.x+.7,JSON.stringify(skated));
    await page.keyboard.press('KeyV');
    await moveTo(171.5);
-   await page.waitForFunction(()=>{const p=__eggyInput.playerRef.body.translation();return Math.abs(p.y-__islandWorld.terrainGround(p.x,p.z)-.555)<.08;},null,{timeout:45000});
+   await page.waitForFunction(()=>{const p=__eggyInput.playerRef.body.translation();return Math.abs(p.y-__islandWorld.terrainGround(p.x,p.z)-.555)<.08;},null,{timeout:actionTimeout});
    // Trying the same approach without jumping must still meet a solid wall.
    await place();
    const wall=await page.evaluate(async()=>{

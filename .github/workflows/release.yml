@@ -13,7 +13,9 @@ concurrency:
 jobs:
   regression:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    # The added real-input roof/plaza routes run on the CPU-only browser too.
+    # Keep every test and the full 15-minute mobile soak mandatory.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

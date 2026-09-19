@@ -357,4 +357,4 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.547,0.596,0.737),um67);`,t2=/^(?:5_
 import {installCentralBuildingContacts as __centralContacts} from '../app/building-footprint.js?v=corner-contact-1';
 const __centralBeforeContacts=no;
 no=async options=>__centralContacts(await __centralBeforeContacts(options),options.renderer);
-import {installHouseRoofSupports} from '../app/house-roof-support.js?v=house-roofs-1';
+import {installHouseRoofSupports} from '../app/house-roof-support.js?v=plaza-climb-1';

@@ -24,7 +24,9 @@ module.exports=async(page,{mobile,check})=>{
   try{
    await page.evaluate(()=>{__candyCamera.parked={p:[249,29,174],t:[224,9.4,140]};});
    await page.waitForTimeout(350);
-   await page.screenshot({path:'.qa-results/divider-'+(mobile?'mobile':'desktop')+'.png'});
+   // CPU-only CI may need longer to capture a composited image. This does not
+   // change the enclosing render-progress, frame-gap or WebGL-loss assertions.
+   await page.screenshot({path:'.qa-results/divider-'+(mobile?'mobile':'desktop')+'.png',timeout:90000});
   }finally{await page.evaluate(()=>{__candyCamera.parked=null;});}
   console.log('PASS restored coastal divider',JSON.stringify({mobile,count:result.count,maxZ:result.maxZ,floorProbes:result.probes.length}));
  });

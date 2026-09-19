@@ -400,7 +400,7 @@ try {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   resize();
-  const { createIslandRuntime } = await import("/67park-feel-lab/island/runtime.bundle.js?v=house-roofs-1");
+  const { createIslandRuntime } = await import("/67park-feel-lab/island/runtime.bundle.js?v=plaza-climb-1");
   world = await createIslandRuntime({ renderer, sahne: scene, kam: camera });
   if (failed || entrySnapshot().status === "error") throw Error(entrySnapshot().error || "Harita y\xFCklenemedi");
   box = new THREE.Box3().setFromObject(world.terrain);

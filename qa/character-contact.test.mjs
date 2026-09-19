@@ -75,6 +75,19 @@ test('a curb corner can lead down onto a still-raised sidewalk instead of acting
  const r=resolveCharacterContact(walk,base(ground,{x:-1,z:0},{x:1,z:0}));
  assert(!r.blocked,JSON.stringify(r));assert(Math.abs(r.position.y-.725)<1e-6);
 });
+test('descending a roof bevel never mistakes the safe floor behind for a new wall',()=>{
+ // Exact 28 cm lip transition from the plaza roof. The rear probe still sees
+ // the previously safe upper surface; only movement AWAY may disregard it.
+ for(const axis of ['x','z'])for(const sign of [-1,1]){
+  const ground=(x,z)=>{const q={x,z}[axis]*sign;return q<-.02?.44:q<.01?.2834:0;};
+  const from={x:0,z:0,y:.2834+.555},to={...from,[axis]:sign*.08,y:.8334-.005};
+  const down=resolveCharacterContact(walk,base(ground,from,to,{x:axis==='x'?3*sign:0,y:-.3,z:axis==='z'?3*sign:0}));
+  assert(!down.blocked,JSON.stringify({axis,sign,down}));assert(Math.abs(down.position[axis]-sign*.08)<1e-6);
+  assert(Math.abs(down.position.y-.555)<1e-6);
+  const wall=(x,z)=>{const q={x,z}[axis]*sign;return q>=.02?4:ground(x,z);};
+  assert(resolveCharacterContact(walk,base(wall,from,to)).blocked,'Forward walls stay closed');
+ }
+});
 test('skate contacts preserve slopes, slide at a wall, and stay bounded after a bad frame',()=>{
  const wall=(x,z)=>x>=0?8:0;
  const r=resolveCharacterContact(sweepRideContact,base(wall,{x:-.41,z:0},{x:.5,z:1}));

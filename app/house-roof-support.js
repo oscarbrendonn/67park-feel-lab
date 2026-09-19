@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import {createCityHeightSampler58} from '../island/city-height-sampler58.js?v=house-roofs-1';
+import {createCityHeightSampler58} from '../island/city-height-sampler58.js?v=plaza-climb-1';
+import {createPlazaClimbSupports} from './plaza-climb-support.js?v=plaza-climb-1';
 
 const HOUSE_GROUPS=new Set(['SMALL_ISLAND_PROPS_V62','CENTRAL_BUILDINGS_V68',
   'BOTTOM_HOMES_V103','ISLAND_NORTH_HOMES','ISLAND_NORTH_APARTMENTS']);
@@ -8,7 +9,8 @@ const isHouse=mesh=>mesh.isInstancedMesh && (mesh.parent.name!=='SMALL_ISLAND_PR
 const terrainHeight=(terrain,x,z)=>typeof terrain==='function'?terrain(x,z):terrain;
 
 // Share the existing buffers and one upward-triangle index per house asset.
-// Nothing is added to the scene, downloaded, animated, or raycast per frame.
+// These roofs add no render meshes. The separate plaza adapter below also
+// supplies its small shared window caps; neither path raycasts per frame.
 export function createHouseRoofSupports(scene,{courtyard:west}={}){
   scene.updateMatrixWorld(true);
   const assets=new Map(),placements=[],cells=new Map(),matrix=new THREE.Matrix4();
@@ -73,6 +75,7 @@ export function createHouseRoofSupports(scene,{courtyard:west}={}){
   }
   function ground(x,z,feet,step,base,terrain){
     if(!Number.isFinite(feet))return base;
+    if(plaza?.contains(x,z))return plaza.ground(x,z,feet,step,base);
     const courtyardRow=courtyardAt(x,z);
     if(courtyardRow&&feet>courtyardRow.min[1]+1.2&&(base===null||base<=courtyardRow.top+1)){
       const y=courtyard.roofGround(x,z);
@@ -93,14 +96,15 @@ export function createHouseRoofSupports(scene,{courtyard:west}={}){
     }
     return base;
   }
+  const plaza=createPlazaClimbSupports(scene);
   const stats={revision:'house-roofs-1',houses:placements.length+courtyardRows.length,assets:assets.size,
     courtyardRoofBand:courtyardRows.length,
     triangles:[...assets.values()].reduce((n,a)=>n+a.sampler.stats.triangles,courtyardSampler?.stats.triangles??0),
     bytes:[...assets.values()].reduce((n,a)=>n+a.sampler.stats.bytes,courtyardSampler?.stats.bytes??0),addedDrawCalls:0,newAssetDownloads:0};
   const sites=placements.map(p=>({group:p.group,x:(p.box.min.x+p.box.max.x)/2,z:(p.box.min.z+p.box.max.z)/2}));
   sites.push(...courtyardRows.map(p=>({group:'WEST_COURTYARD_V102',x:p.x,z:p.z})));
-  function dispose(){assets.clear();placements.length=0;cells.clear();sites.length=0;courtyardSampler=courtyard=null;courtyardRows=[];stats.disposed=true;}
-  return {ground,sample,stats,sites,dispose};
+  function dispose(){plaza?.dispose();assets.clear();placements.length=0;cells.clear();sites.length=0;courtyardSampler=courtyard=null;courtyardRows=[];stats.disposed=true;}
+  return {ground,sample,stats,sites,plaza,dispose};
 }
 
 export function installHouseRoofSupports(world){
@@ -119,6 +123,7 @@ export function installHouseRoofSupports(world){
   world.characterGround=(x,z,feet,step=.36)=>roofs.ground(x,z,feet,step,
     world.ground(x,z),world.terrainGround);
   world.renderer.domElement.dataset.houseRoofs=JSON.stringify(roofs.stats);
+  if(roofs.plaza)world.renderer.domElement.dataset.plazaClimb=JSON.stringify(roofs.plaza.stats);
   const originalDispose=world.dispose;
   world.dispose=function(...args){roofs.dispose();return originalDispose?.apply(this,args);};
   return world;
