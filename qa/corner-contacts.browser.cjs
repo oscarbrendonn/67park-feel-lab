@@ -54,9 +54,16 @@ module.exports=async function checkCornerContacts(page,{mobile=false,check}){
      await observe(800,()=>{const q=body.translation();if(w.ground(q.x,q.z)>q.y+1)intrusion=true;},()=>body.translation().z-before.z>1);
      const slide={...body.translation()};stop();
      // Push directly into the visibly closed facade: stopped, with a clear cue.
-     await place(x,z);direction(-1,0);
-     await observe(700,null,()=>!!document.querySelector('#park-contact-cue:not([hidden])'));
-     const wallStop={...body.translation()},cue=!!document.querySelector('#park-contact-cue:not([hidden])');
+     await place(x,z);
+     // The cue expires after 450 ms. A CPU-only renderer can take seconds
+     // between RAF callbacks, so sampling only at RAF may miss a real cue.
+     // Observe its actual DOM visibility transition; keep the movement,
+     // wall penetration, render-stall and overall deadline assertions intact.
+     let cue=false;
+     const cueObserver=new MutationObserver(()=>{cue||=!!document.querySelector('#park-contact-cue:not([hidden])');});
+     cueObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden']});
+     try{direction(-1,0);await observe(700,null,()=>cue);}finally{cueObserver.disconnect();}
+     const wallStop={...body.translation()};
      direction(1,0);await observe(600,null,()=>body.translation().x-wallStop.x>1);
      const retreat={...body.translation()};stop();await frames(3);
      rows.push({riding,before,slide,wall,wallStop,retreat,cue,intrusion,cueHidden:!document.querySelector('#park-contact-cue:not([hidden])')});

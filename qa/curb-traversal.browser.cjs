@@ -10,9 +10,15 @@ module.exports=async function checkCurbTraversal(page,{mobile=false,check}){
    const stop=()=>{input.x=input.z=0;input.run=false;body.setLinvel({x:0,y:0,z:0},true);};
    const ride=async on=>{if(board.on!==on){dispatchEvent(new KeyboardEvent('keydown',{key:'v',code:'KeyV',bubbles:true}));dispatchEvent(new KeyboardEvent('keyup',{key:'v',code:'KeyV',bubbles:true}));await frame();}if(board.on!==on)throw Error('Skate control did not switch');};
    async function place(p){
-    stop();__tp([original.x,original.y,original.z]);for(let i=0;i<3;i++)await frame();
-    __tp([p[0],w.ground(...p)+.555,p[1]]);for(let i=0;i<8;i++)await frame();
-    const q=body.translation();if(Math.hypot(q.x-p[0],q.z-p[1])>.1)throw Error('Curb start not reached');
+    stop();
+    // Reverse from the actual arrival, rather than teleporting off-map and
+    // back for every leg. New sites still reset through the distant spawn.
+    const current=body.translation();
+    if(Math.hypot(current.x-p[0],current.z-p[1])>.2){
+     __tp([original.x,original.y,original.z]);await frame();await frame();
+     __tp([p[0],w.ground(...p)+.555,p[1]]);await frame();await frame();
+    }
+    const q=body.translation();if(Math.hypot(q.x-p[0],q.z-p[1])>.2||Math.abs(q.y-w.ground(q.x,q.z)-.555)>.12)throw Error('Curb start not grounded at the requested site');
    }
    const sites=[
     {name:'pictured-south',low:[170,118],high:[170,114.5]},
@@ -28,7 +34,7 @@ module.exports=async function checkCurbTraversal(page,{mobile=false,check}){
       const a=w.ground(...from),b=w.ground(...to),rise=Math.abs(b-a);
       if(rise<.24||rise>.27||w.water(...from)||w.water(...to))throw Error('Real 25 cm entrance fixture changed: '+site.name);
       await place(from);const before={...body.translation()};
-      const dx=to[0]-from[0],dz=to[1]-from[1],length=Math.hypot(dx,dz),yaw=w.camera.userData.feelLab.yaw;
+      const dx=to[0]-before.x,dz=to[1]-before.z,length=Math.hypot(dx,dz),yaw=w.camera.userData.feelLab.yaw;
       input.x=(Math.cos(yaw)*dx-Math.sin(yaw)*dz)/length;
       input.z=(-Math.sin(yaw)*dx-Math.cos(yaw)*dz)/length;
       const started=performance.now();let cue=false;
@@ -36,7 +42,7 @@ module.exports=async function checkCurbTraversal(page,{mobile=false,check}){
        await frame();cue||=!!document.querySelector('#park-contact-cue:not([hidden])');
        if(performance.now()-started>45000)throw Error('Path still blocked: '+JSON.stringify({site,riding,ascending,position:body.translation()}));
       }
-      stop();for(let i=0;i<8;i++)await frame();
+      stop();await frame();await frame();
       rows.push({site:site.name,riding,ascending,rise,cue,before,after:{...body.translation()},ground:w.ground(body.translation().x,body.translation().z)});
      }
     }
@@ -52,7 +58,7 @@ module.exports=async function checkCurbTraversal(page,{mobile=false,check}){
   const setup=await page.evaluate(async()=>{
    const w=__islandWorld,body=__eggyInput.playerRef.body;
    window.__curbUIStart={...body.translation()};
-   __tp([172,w.ground(172,118)+.555,118]);for(let i=0;i<8;i++)await new Promise(requestAnimationFrame);
+   __tp([172,w.ground(172,118)+.555,118]);for(let i=0;i<2;i++)await new Promise(requestAnimationFrame);
    const yaw=w.camera.userData.feelLab.yaw;
    return {x:Math.sin(yaw),z:Math.cos(yaw),before:{...body.translation()}};
   });
