@@ -19,6 +19,7 @@ async function main(){
  const page=await context.newPage(),errors=[];let friend;
  page.on('pageerror',e=>errors.push(String(e)));
  const roomEvents=[];
+ page.on('framenavigated',frame=>{if(frame===page.mainFrame()){roomEvents.push({at:Date.now(),direction:'navigation',path:new URL(frame.url()).pathname});if(roomEvents.length>50)roomEvents.shift();}});
  page.on('websocket',socket=>{
   socket.on('framesent',({payload})=>{try{const m=JSON.parse(String(payload));if(/^room\.|match.ready/.test(m.t)){roomEvents.push({at:Date.now(),direction:'sent',t:m.t});if(roomEvents.length>50)roomEvents.shift();}}catch{}});
   socket.on('framereceived',({payload})=>{try{const m=JSON.parse(String(payload));if(m.t==='state'){const next={direction:'received',t:m.t,status:m.room?.status??null};if(roomEvents.at(-1)?.status!==next.status){roomEvents.push({...next,at:Date.now()});if(roomEvents.length>50)roomEvents.shift();}}}catch{}});
@@ -39,6 +40,17 @@ async function main(){
   console.log('RECOVERY_BROWSER_PASS incompatible version and explicit reload');
   const check=async(name,fn)=>{const before=await page.evaluate(()=>__islandWorld.renderer.info.render.frame);await fn();await page.waitForFunction(n=>__islandWorld.renderer.info.render.frame>n+2,before,{timeout:15000});console.log('PASS',name)};
   await require('./recovery-graphics.browser.cjs')(page,{mobile:true,check});
+  if(process.env.PARK_SOFTWARE_RENDER==='1'){
+   // The framebuffer checks above finish on Automatic (native DPR 2). Put
+   // this CPU-only functional recovery fixture back on its initial REAL Low
+   // setting before navigation, rather than queueing full-resolution shadow
+   // work during a deliberate download failure. No timing limit is relaxed.
+   await page.locator('#party-settings-btn').click();
+   await page.getByRole('combobox',{name:'Graphics quality',exact:true}).selectOption('low');
+   await page.getByRole('button',{name:'Close settings',exact:true}).click();
+   await page.waitForFunction(()=>__islandWorld.renderer.getPixelRatio()===.8&&!__islandWorld.renderer.shadowMap.enabled);
+   console.log('RECOVERY_CPU_PROFILE',await page.evaluate(()=>{const r=__islandWorld.renderer;return {dpr:r.getPixelRatio(),width:r.domElement.width,height:r.domElement.height,shadows:r.shadowMap.enabled}}));
+  }
   const {onlinePeer,waitUntil}=await import('./online-fixture.mjs');
   friend=await onlinePeer(origin,{name:'Recovery QA'});
   await page.waitForFunction(id=>__eggyNet.remotes.has(id),friend.id);
@@ -61,10 +73,13 @@ async function main(){
   await page.waitForFunction(()=>__candyOnline.data.room?.code);const code=await page.evaluate(()=>__candyOnline.data.room.code);
   friend.send({t:'room.join',code});await page.waitForFunction(()=>__candyOnline.data.room?.members.length===2);
   await page.route('**/online-match-3GT2AEG7.js*',route=>route.fulfill({status:503,body:'Isolated minigame download failure'}));
-  await page.evaluate(()=>__candyOnline.send({t:'room.start'}));
   // Navigation is distinct from loading: this scenario deliberately breaks
-  // the entry download, so do not wait for the page-wide load event first.
-  await page.waitForURL('**/balloon/**',{waitUntil:'commit',timeout:20000});
+  // the entry download. Arm the commit listener BEFORE starting the room so
+  // a fast navigation cannot race the acknowledgement of page.evaluate().
+  await Promise.all([
+   page.waitForURL('**/balloon/**',{waitUntil:'commit',timeout:20000}),
+   page.evaluate(()=>__candyOnline.send({t:'room.start'})),
+  ]);
   await page.locator('#park-connection-recovery[data-state=loading-error]').waitFor({timeout:60000});
   assert(friend.sockets.every(ws=>ws.readyState===1));
   await page.screenshot({path:'.qa-results/minigame-download-retry-mobile.png'});
@@ -96,15 +111,17 @@ async function main(){
   await page.evaluate(()=>__candyOnline.send({t:'room.create',capacity:2,mode:'balloon'}));
   await page.waitForFunction(()=>__candyOnline.data.room?.code);const again=await page.evaluate(()=>__candyOnline.data.room.code);
   friend.send({t:'room.join',code:again});await page.waitForFunction(()=>__candyOnline.data.room?.members.length===2);
-  await page.evaluate(()=>__candyOnline.send({t:'room.start'}));
-  await page.waitForURL('**/balloon/**',{waitUntil:'commit',timeout:20000});
+  await Promise.all([
+   page.waitForURL('**/balloon/**',{waitUntil:'commit',timeout:20000}),
+   page.evaluate(()=>__candyOnline.send({t:'room.start'})),
+  ]);
   await page.locator('#park-connection-recovery[data-state=loading-error]').waitFor({timeout:60000});
   await page.getByRole('link',{name:/Return to/}).click();
   await ready();await page.waitForFunction(()=>__candyOnline.data.room===null,null,{timeout:15000});
   console.log('RECOVERY_BROWSER_PASS original return link also leaves failed match');
   assert.deepEqual(errors.filter(error=>!(/Failed to fetch dynamically imported module/.test(error)&&error.includes('online-match-3GT2AEG7.js'))),[],'Unexpected runtime error during recovery');
   assert.equal((await(await fetch(origin+'/health')).json()).faults,0);
- }catch(error){await page.screenshot({path:'.qa-results/recovery-failure.png'}).catch(()=>{});console.error('RECOVERY_STATE',await page.evaluate(()=>({text:document.body.innerText.slice(-1800),ready:window.__islandWorld?.ready,online:window.__candyOnline?.data,match:!!window.__onlineMatch})).catch(()=>({})),errors,roomEvents);throw error}
+ }catch(error){await page.screenshot({path:'.qa-results/recovery-failure.png'}).catch(()=>{});console.error('RECOVERY_STATE',await page.evaluate(()=>({path:location.pathname,text:document.body.innerText.slice(-1800),ready:window.__islandWorld?.ready,online:window.__candyOnline?.data,match:!!window.__onlineMatch})).catch(()=>({})),errors,roomEvents);throw error}
  finally{friend?.close();await context.close();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{await browser?.close();server?.kill('SIGTERM')});

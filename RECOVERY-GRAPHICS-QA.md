@@ -269,3 +269,30 @@ is `https://things-silk-insured-athletics.trycloudflare.com`; `/health` returned
 this build, protocol 1 and zero faults. The new client configuration uses that
 address. No paid server or subscription was created. This temporary service
 still depends on the Mac and its tunnel process remaining available.
+
+### 20 September continuation
+
+The hardware-backed full foundation rerun completed: desktop and mobile
+viewports both reported `FOUNDATION_BROWSER_PASS`, zero errors and a connected
+peer. The mobile viewport completed the full 900,000 ms soak. Chat spam,
+100 home transitions per viewport, asset retry and the real-input geometry
+routes remained enabled. Evidence: `.qa-results/hardware-final-2.log`.
+This is Chrome mobile emulation, separate from the physical Android results
+above and not an iPhone pass.
+
+Hosted run `35470430891` failed its 20-second navigation-commit wait before the
+intentional minigame download failure. Its later failure capture contained the
+minigame page's text, but did not record the URL, so it does not prove a single
+root cause. The recovery harness now records bounded main-frame navigation
+events and arms the navigation wait before starting the room. On CPU-only
+rendering it also restores its actual Low graphics setting through the UI
+after testing every quality level; it no longer leaves native-DPR Automatic
+shadow rendering queued during the network-recovery scenarios. No deadline,
+framebuffer assertion, production graphics setting or scenario was removed.
+
+The complete local software-rendered recovery suite passed with that harness:
+High/Low/Medium real framebuffer changes, remote movement after reconnect,
+failed entry download and retry into a real match, match reconnect while a
+peer continues, and both failed-match return controls. Evidence:
+`.qa-results/recovery-before-navigation.log`. This does not establish that the
+hosted Linux gate passes; publication still waits for the entire release gate.
