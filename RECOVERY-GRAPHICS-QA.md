@@ -296,3 +296,33 @@ failed entry download and retry into a real match, match reconnect while a
 peer continues, and both failed-match return controls. Evidence:
 `.qa-results/recovery-before-navigation.log`. This does not establish that the
 hosted Linux gate passes; publication still waits for the entire release gate.
+
+Run `35471608094` also failed before navigation commit. Its new bounded event
+log confirms that the server's `loading` response arrived in 3 ms, but the
+browser committed the destination roughly 36.6 seconds later. The destination
+then displayed the intended retry UI; no successful hosted run is claimed.
+
+Additional local CPU traces captured WebGL command-buffer waits: approximately
+1.3 seconds in `GetProgramiv` during a 3.1-second room transition, and a
+12.4-second `ReadPixels` wait at the coastal view. These traces support graphics
+backpressure as a contributor, but are not a symbolicated root cause for the
+Linux failure. They do not show the live game or physical Android freezing for
+36 seconds. Replacing whole-browser SwiftShader with its WebGL-only mode still
+gave a 27-second coastal screenshot sample, so that was not accepted as a fix.
+
+The next hosted run uses Mesa llvmpipe under Xvfb instead of SwiftShader for the
+same full Chromium functional scenarios. `qa/browser-launch.cjs` asserts the
+actual WebGL renderer, rejecting silent fallback or lost contexts. The public
+game's renderer, scene, assets and settings are unchanged. All required cases,
+the 20-second navigation deadline, 15-second CPU frame budget and 15-minute
+mobile soak remain enabled. This is a test-infrastructure change, not a claim
+that a GPU-less runner measures phone FPS. Hosted results are still required.
+
+Optional profiling: with the existing local QA server on port 8521, run
+`PARK_SOFTWARE_RENDER=1 node qa/transition-diagnostic.cjs`; add
+`PARK_DIAGNOSTIC_COAST=1` for the coastal pose. Traces are written only under
+`.qa-results/`. Its longer diagnostic navigation wait is **not** used by the
+mandatory recovery test and cannot produce a release pass.
+
+Driver references: [Chromium SwiftShader modes](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/gpu/swiftshader.md),
+[ANGLE renderer switches](https://github.com/google/angle/blob/main/doc/DebuggingTips.md).

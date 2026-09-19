@@ -3,10 +3,11 @@ const WebSocket=require('ws');
 const assert=require('node:assert/strict');
 const {spawn}=require('node:child_process');
 const fs=require('node:fs');
+const {browserLaunchOptions,assertBrowserRenderer}=require('./browser-launch.cjs');
 const port=Number(process.env.PARK_QA_PORT||8499),origin='http://127.0.0.1:'+port,base=origin+'/67park-feel-lab/';
 const soakMs=Number(process.env.PARK_SOAK_MS||120000);
 const softwareRender=process.env.PARK_SOFTWARE_RENDER==='1';
-// SwiftShader on the CPU-only runner is a functional/resource test, not a GPU
+// Software rendering on the CPU-only runner is a functional/resource test, not a GPU
 // performance benchmark. Real hardware retains the strict 2.5s stall budget.
 const stallMs=softwareRender?15000:2500;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -14,8 +15,7 @@ let server,browser;
 async function start(){
  server=spawn(process.execPath,['qa/regression-server.mjs'],{stdio:['ignore','pipe','inherit'],env:process.env});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('QA server start timed out')),60000);server.stdout.on('data',b=>{process.stdout.write(b);if(String(b).includes('REGRESSION_READY')){clearTimeout(timer);resolve();}});server.once('exit',c=>{clearTimeout(timer);reject(Error('QA server exited '+c));});});
- const mac='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
- browser=await chromium.launch({headless:true,channel:'chromium',...(softwareRender?{args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}:{}),...(process.env.PARK_CHROME?{executablePath:process.env.PARK_CHROME}:process.platform==='darwin'&&fs.existsSync(mac)?{executablePath:mac}:{})});
+ browser=await chromium.launch(browserLaunchOptions());
 }
 async function peer(){
  const guest=await(await fetch(origin+'/kimi/api/session',{headers:{Origin:origin}})).json(),messages=[],sockets=[];
@@ -86,6 +86,7 @@ async function run(mobile){
   // stall threshold below stays unchanged and is measured only after entry.
   await page.waitForFunction(()=>window.__islandWorld?.ready&&window.__eggyNet?.connected&&window.__candyOnline?.data.connected&&window.__parkHousing?.debug().model&&!document.querySelector('.wardrobe'),null,{timeout:180000});
   console.log('PASS asset retry',mobile,'render profile',softwareRender?'software-quarter-resolution':'hardware-default');errors.length=0;
+  await assertBrowserRenderer(page);
   const read=()=>page.evaluate(()=>({frame:__islandWorld.renderer.info.render.frame,gap:__gate.maxGap,losses:__gate.losses,party:__party.status(),home:__parkHousing.debug(),id:__candyOnline.data.me.id,connected:__eggyNet.connected&&__candyOnline.data.connected,programs:__islandWorld.renderer.info.programs?.length}));
   async function check(name,action){
    await page.evaluate(()=>{__gate.maxGap=0});const before=await read();

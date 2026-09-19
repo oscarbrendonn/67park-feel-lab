@@ -2,6 +2,7 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {spawn}=require('node:child_process');
+const {browserLaunchOptions,assertBrowserRenderer}=require('./browser-launch.cjs');
 const port=Number(process.env.PARK_RECOVERY_PORT||8512),origin='http://127.0.0.1:'+port,base=origin+'/67park-feel-lab/';
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 let server,browser;
@@ -9,8 +10,7 @@ async function main(){
  fs.mkdirSync('.qa-results',{recursive:true});
  server=spawn(process.execPath,['qa/regression-server.mjs'],{env:{...process.env,PARK_QA_PORT:String(port)},stdio:['ignore','pipe','inherit']});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Recovery QA server timed out')),60000);server.stdout.on('data',b=>{if(String(b).includes('REGRESSION_READY')){clearTimeout(timer);resolve()}});server.once('exit',()=>reject(Error('Recovery QA server stopped')))});
- const mac='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
- browser=await chromium.launch({headless:true,...(process.platform==='darwin'&&fs.existsSync(mac)?{executablePath:mac}:{}),...(process.env.PARK_SOFTWARE_RENDER==='1'?{args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}: {})});
+ browser=await chromium.launch(browserLaunchOptions());
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
  await context.addInitScript(()=>{
   localStorage.setItem('67park-feel-lab.character.v3',JSON.stringify({base:'goril'}));localStorage.setItem('67park-feel-lab.player-profile.v1',JSON.stringify({version:1,base:'goril'}));localStorage.setItem('67park-feel-lab-muted','1');
@@ -38,6 +38,7 @@ async function main(){
   await page.screenshot({path:'.qa-results/version-mismatch-mobile.png'});
   await page.unroute('**/kimi/api/session*');await page.getByRole('button',{name:'Reload latest version',exact:true}).click();await ready();
   console.log('RECOVERY_BROWSER_PASS incompatible version and explicit reload');
+  await assertBrowserRenderer(page);
   const check=async(name,fn)=>{const before=await page.evaluate(()=>__islandWorld.renderer.info.render.frame);await fn();await page.waitForFunction(n=>__islandWorld.renderer.info.render.frame>n+2,before,{timeout:15000});console.log('PASS',name)};
   await require('./recovery-graphics.browser.cjs')(page,{mobile:true,check});
   if(process.env.PARK_SOFTWARE_RENDER==='1'){

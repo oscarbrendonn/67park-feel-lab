@@ -25,12 +25,17 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm audit --audit-level=high
       - run: npx playwright install --with-deps chromium
+      - name: Install CPU OpenGL test renderer
+        run: sudo apt-get install -y libgl1-mesa-dri libegl-mesa0 libglx-mesa0 mesa-utils xvfb
       - run: npm test
       - name: Chat spam, safety, reconnect, 100 home transitions, asset retry and mobile soak
-        run: npm run test:browser
+        run: xvfb-run -a -s "-screen 0 1280x1024x24" npm run test:browser
         env:
           PARK_SOAK_MS: '900000'
           PARK_SOFTWARE_RENDER: '1'
+          PARK_SOFTWARE_DRIVER: 'mesa'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          GALLIUM_DRIVER: 'llvmpipe'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
