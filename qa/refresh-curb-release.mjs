@@ -2,8 +2,9 @@
 // singleton on the same URL; never rebuild the hand-integrated game bundle.
 import fs from 'node:fs';
 import path from 'node:path';
-const root=new URL('../',import.meta.url).pathname,revision='curb-traversal-3';
-const sources=new Map(),updated=new Map(),changed=new Set(['character-contact.js','chunk-OZ77422N.js']);
+const root=new URL('../',import.meta.url).pathname,revision=process.env.PARK_RELEASE_REVISION||'curb-traversal-3';
+const sources=new Map(),updated=new Map(),changed=new Set(process.env.PARK_RELEASE_SEEDS?process.env.PARK_RELEASE_SEEDS.split(','):['character-contact.js','chunk-OZ77422N.js']);
+if(!/^[a-zA-Z0-9_-]+$/.test(revision)||[...changed].some(s=>!/^[a-zA-Z0-9_.-]+\.js$/.test(s)))throw Error('Invalid cache refresh revision or seeds');
 function visit(dir){
  for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
   const p=path.join(dir,entry.name);
@@ -19,7 +20,8 @@ for(let again=true;again;){
  again=false;
  for(const [p,s]of updated){
   let next=s;
-  for(const name of changed)next=next.replaceAll(new RegExp(name.replaceAll('.','\\.')+'\\?v=[a-zA-Z0-9_-]+','g'),name+'?v='+revision);
+  // Match the complete basename: main.js must never match domain.js.
+  for(const name of changed)next=next.replaceAll(new RegExp('(?<![a-zA-Z0-9_.-])'+name.replaceAll('.','\\.')+'\\?v=[a-zA-Z0-9_-]+','g'),name+'?v='+revision);
   if(next!==s){updated.set(p,next);if(!changed.has(path.basename(p))){changed.add(path.basename(p));again=true;}}
  }
 }
