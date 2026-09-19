@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // Immutable, source-derived upward triangles. Float64 interpolation preserves
 // small bevel/roof edges without inventing a separate box-shaped walk floor.
-export function createCityHeightSampler58(meshes,{cellSize=3}={}){
+export function createCityHeightSampler58(meshes,{cellSize=3,minHeight=-Infinity}={}){
  if(!Array.isArray(meshes)||!meshes.length||!(cellSize>0))throw Error('City height58: inputs');
  const values=[],owners=[],a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
  const bounds=[Infinity,Infinity,-Infinity,-Infinity];
@@ -14,6 +14,7 @@ export function createCityHeightSampler58(meshes,{cellSize=3}={}){
    a.fromBufferAttribute(pos,ix?ix.getX(k):k).applyMatrix4(mesh.matrixWorld);
    b.fromBufferAttribute(pos,ix?ix.getX(k+1):k+1).applyMatrix4(mesh.matrixWorld);
    c.fromBufferAttribute(pos,ix?ix.getX(k+2):k+2).applyMatrix4(mesh.matrixWorld);
+   if(Math.max(a.y,b.y,c.y)<minHeight)continue;
    const bx=b.x-a.x,bz=b.z-a.z,cx=c.x-a.x,cz=c.z-a.z,det=bx*cz-bz*cx;
    if(![...a.toArray(),...b.toArray(),...c.toArray(),det].every(Number.isFinite))throw Error('City height58: finite geometry');
    if(det>=-1e-10)continue;

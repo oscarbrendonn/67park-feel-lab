@@ -1531,7 +1531,7 @@ await entryStage(10,'Preparing the stadium and beach');
     renderer.domElement.__stadiumCoast99=stadiumCoast99;
   } catch(e){renderer.domElement.dataset.stadiumCoast99='error: '+e.message;console.error('Stadium and coast',e);}
   try {
-    const {createWestCourtyard102}=await import('./west-courtyard-v102.js?v=102.3');
+    const {createWestCourtyard102}=await import('./west-courtyard-v102.js?v=house-roofs-1.3');
 await entryStage(11,'Preparing homes and courts');
     westCourtyard102=createWestCourtyard102({scene:sahne,terrainRoot:kok,renderer,sample:zeminVurusu,variant:'kimi'});
     renderer.domElement.__westCourtyard102=westCourtyard102;
@@ -1658,7 +1658,8 @@ const failures=Object.entries(renderer.domElement.dataset).filter(([k,v])=>/^err
 if(failures.length)throw Error('Island layers missing: '+JSON.stringify(failures));
 installParcelCornerQA(world);
 installParcelGapQA(world);
-return installLobbyCourts(installIslandSwimBoundary(world));
+return installLobbyCourts(installHouseRoofSupports(installIslandSwimBoundary(world)));
 
 } finally {islandStartupAssets.close();renderer.domElement.dataset.islandStartupAssets=JSON.stringify(islandStartupAssets.stats);}
 }
+import {installHouseRoofSupports} from '../app/house-roof-support.js?v=house-roofs-1';
