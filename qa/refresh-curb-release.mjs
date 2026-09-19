@@ -2,7 +2,7 @@
 // singleton on the same URL; never rebuild the hand-integrated game bundle.
 import fs from 'node:fs';
 import path from 'node:path';
-const root=new URL('../',import.meta.url).pathname,revision='curb-traversal-2';
+const root=new URL('../',import.meta.url).pathname,revision='curb-traversal-3';
 const sources=new Map(),updated=new Map(),changed=new Set(['character-contact.js','chunk-OZ77422N.js']);
 function visit(dir){
  for(const entry of fs.readdirSync(dir,{withFileTypes:true})){

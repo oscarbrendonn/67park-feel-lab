@@ -61,12 +61,19 @@ test('25 cm park entrances and 32 cm paved steps are traversable in every direct
  }
 });
 test('larger walls, unsupported ledges and explicit house/tree barriers remain closed',()=>{
- for(const ground of [x=>x>=0?.36:0,x=>x>=0&&x<=.15?.3:0,x=>x>=0?8:0]){
+ for(const ground of [x=>x>=0?.36:0,x=>x<0?0:x<=.15?.3:-3,x=>x>=0?8:0]){
   const result=resolveCharacterContact(walk,base(ground,{x:-1,z:0},{x:2,z:0}));
   assert(result.blocked);assert(result.position.x<0);
  }
  const result=resolveCharacterContact(walk,{...base(()=>0,{x:-1,z:0},{x:2,z:0}),blocked:x=>x>=0});
  assert(result.blocked);assert(result.position.x<0);
+});
+test('a curb corner can lead down onto a still-raised sidewalk instead of acting as a wall',()=>{
+ // Crossing the tip of a rounded curb need not land at its exact crown height.
+ // Both the crown and the slightly lower sidewalk are safely above the road.
+ const ground=x=>x<0?0:x<.15?.2512388229370117:.17;
+ const r=resolveCharacterContact(walk,base(ground,{x:-1,z:0},{x:1,z:0}));
+ assert(!r.blocked,JSON.stringify(r));assert(Math.abs(r.position.y-.725)<1e-6);
 });
 test('skate contacts preserve slopes, slide at a wall, and stay bounded after a bad frame',()=>{
  const wall=(x,z)=>x>=0?8:0;

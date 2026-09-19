@@ -75,7 +75,7 @@ test('entry release keys invalidate changed modules and guest copy is honest',()
   assert(read(p).includes('not in a cloud account'));
  }
  assert(read('index.html').includes('player-settings.js?v=foundation-basics-1'));
- assert(read('index.html').includes('party-pack.js?v=curb-traversal-2'));
+ assert(read('index.html').includes('party-pack.js?v=curb-traversal-3'));
  assert(read('play/index.html').includes('chunk-A5QZM2VZ.js?v=foundation-safety-1'));
  assert(read('app/party/party-pack.js').includes('settings-panel.js?v=foundation-safety-1'));
  const config=read('index.html').match(/window\.__partyConfig=\{runtime:"([^"]+)",carry:"([^"]+)"\}/);
