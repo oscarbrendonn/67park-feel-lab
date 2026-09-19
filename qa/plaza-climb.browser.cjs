@@ -83,7 +83,9 @@ module.exports=async function checkPlazaClimb(page,{mobile=false,check}){
    await direction(1,20.5);await page.waitForFunction(()=>window.__qaPlazaAtTarget,null,{timeout:actionTimeout});await stop();
    await page.waitForFunction(()=>__eggyInput.playerRef.body.translation().y<10.3,null,{timeout:actionTimeout});
    // Same front approached on the ground stays closed.
-   await direction(-1,16);await page.waitForTimeout(1600);await stop();
+   await direction(-1,16);await page.evaluate(()=>window.__qaPlazaWallFrames=0);
+   await page.waitForFunction(()=>{if(__eggyInput.playerRef.body.translation().x<17.01)window.__qaPlazaWallFrames++;return window.__qaPlazaWallFrames>=8;},null,{timeout:actionTimeout});
+   await stop();
    const wall=await page.evaluate(()=>({...__eggyInput.playerRef.body.translation()}));
    assert(wall.x>=16.85&&wall.x<17.5&&wall.y<11,JSON.stringify({wall}));
    console.log('PASS plaza route',JSON.stringify({mobile,shrub,awning,sill,cap,roof,wall}));
