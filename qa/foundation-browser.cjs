@@ -73,6 +73,7 @@ async function run(mobile){
    console.log('PASS',mobile,name,JSON.stringify({frames:after.frame-before.frame,maxGap:Math.round(after.gap),programs:after.programs}));
   }
   await require('./corner-contacts.browser.cjs')(page,{mobile,check});
+  await require('./grass-boundary.live.cjs')(page,{mobile,check});
   friend=await peer();await page.waitForFunction(id=>__candyOnline.data.island.players.some(p=>p.id===id),friend.id);
   await check('chat composer 12 messages and 1000 repeated submit attempts',async()=>{
    for(let i=0;i<12;i++){await page.locator('.park-chat button').last().click();await page.getByPlaceholder('Message everyone…').fill('QA message '+i);await page.locator('.park-chat button').last().click();await page.waitForTimeout(850);}
