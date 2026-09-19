@@ -46,8 +46,12 @@ module.exports=async function checkHouseRoofs(page,{mobile=false,check}){
   async function moveTo(target){
    return page.evaluate(async ({target,deadline})=>{
     const w=__islandWorld,b=__eggyInput.playerRef.body,input=__eggyInput.input,yaw=w.camera.userData.feelLab.yaw;
-    input.x=Math.cos(yaw);input.z=-Math.sin(yaw);const started=performance.now();
-    try{while(b.translation().x<target){await new Promise(requestAnimationFrame);if(performance.now()-started>deadline)throw Error('Roof movement blocked: '+JSON.stringify(b.translation()));}}
+    const started=performance.now();
+    // Use the existing analog control for the final approach. Full-strength
+    // steering can overshoot the landing sample by >1m in one software-GPU
+    // frame and invalidate the subsequent slope-height comparison.
+    // Stay above the shipped controller's 0.08 analog dead zone.
+    try{while(b.translation().x<target-.04){const remaining=target-b.translation().x,strength=Math.max(.1,Math.min(1,remaining*3));input.x=Math.cos(yaw)*strength;input.z=-Math.sin(yaw)*strength;await new Promise(requestAnimationFrame);if(performance.now()-started>deadline)throw Error('Roof movement blocked: '+JSON.stringify(b.translation()));}}
     finally{input.x=input.z=0;const v=b.linvel();b.setLinvel({x:0,y:v.y,z:0},true);}
     return {...b.translation()};
    },{target,deadline:actionTimeout});

@@ -22,11 +22,15 @@ module.exports=async(page,{mobile,check})=>{
    assert(p.y>9.375,'Floor opening behind shortened divider '+JSON.stringify(p));
   }
   try{
+   const timing=async stage=>console.log('DIVIDER_STAGE',JSON.stringify({stage,...await page.evaluate(()=>({at:performance.now(),gap:__gate.maxGap,frame:__islandWorld.renderer.info.render.frame,ratio:__islandWorld.renderer.getPixelRatio()}))}));
+   await timing('before-view');
    await page.evaluate(()=>{__candyCamera.parked={p:[249,29,174],t:[224,9.4,140]};});
    await page.waitForTimeout(350);
+   await timing('before-image');
    // CPU-only CI may need longer to capture a composited image. This does not
    // change the enclosing render-progress, frame-gap or WebGL-loss assertions.
    await page.screenshot({path:'.qa-results/divider-'+(mobile?'mobile':'desktop')+'.png',timeout:90000});
+   await timing('after-image');
   }finally{await page.evaluate(()=>{__candyCamera.parked=null;});}
   console.log('PASS restored coastal divider',JSON.stringify({mobile,count:result.count,maxZ:result.maxZ,floorProbes:result.probes.length}));
  });

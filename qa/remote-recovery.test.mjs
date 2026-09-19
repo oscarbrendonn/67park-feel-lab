@@ -30,3 +30,12 @@ test('disposing during authentication never attaches an orphan listener',async()
  const remove=installClaudeRemoteNetwork(client),pending=client.connect();remove();resolve();await pending;
  assert.equal(client.ws.listeners,0);
 });
+test('moving names retain their badges with bounded compositor layers and no backdrop blur',()=>{
+ const main=fs.readFileSync(new URL('../app/main.js',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../app/party/settings-panel.css',import.meta.url),'utf8');
+ assert(main.includes('wrapperClass:"park-nameplate-layer"'));
+ assert(main.includes('"data-remote-name":playerId'));
+ assert(css.includes('.park-nameplate-layer{will-change:transform;pointer-events:none}'));
+ assert.match(css,/\[data-remote-name\]\{will-change:transform;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:0 1px 0 #00000014!important\}/);
+ assert(css.includes('html[data-park-show-names=false]'));
+});

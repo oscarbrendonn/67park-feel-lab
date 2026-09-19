@@ -40,13 +40,17 @@ async function main(){
   const check=async(name,fn)=>{const before=await page.evaluate(()=>__islandWorld.renderer.info.render.frame);await fn();await page.waitForFunction(n=>__islandWorld.renderer.info.render.frame>n+2,before,{timeout:15000});console.log('PASS',name)};
   await require('./recovery-graphics.browser.cjs')(page,{mobile:true,check});
   const {onlinePeer,waitUntil}=await import('./online-fixture.mjs');
-  friend=await onlinePeer(origin,{name:'Recovery match friend'});
+  friend=await onlinePeer(origin,{name:'Recovery QA'});
   await page.waitForFunction(id=>__eggyNet.remotes.has(id),friend.id);
   const p=await page.evaluate(()=>{const p=__eggyInput.playerRef.body.translation();return[p.x+2,p.y,p.z]});
   const motion=()=>friend.send({t:'s',p,ry:0,cm:[1,3,2,0,0,0,0,0,0]},'ws');
   const motionTimer=setInterval(motion,120);
   try{
    await page.waitForFunction(id=>__eggyNet.remotes.get(id)?.claudeMotion?.[2]===2,friend.id);
+   await page.waitForFunction(id=>document.querySelector('[data-remote-name="'+id+'"]')?.closest('.park-nameplate-layer'),friend.id);
+   const label=await page.locator('[data-remote-name="'+friend.id+'"]').evaluate(el=>({name:el.textContent,blur:getComputedStyle(el).backdropFilter,layer:getComputedStyle(el.closest('.park-nameplate-layer')).willChange}));
+   assert.equal(label.name,'Recovery QA');assert.equal(label.blur,'none');assert.equal(label.layer,'transform');
+   console.log('RECOVERY_BROWSER_PASS player name stays visible in a composited badge');
    await page.evaluate(()=>__eggyNet.ws.close());
    await page.waitForFunction(()=>!__eggyNet.connected,null,{timeout:5000});
    await page.waitForFunction(id=>__eggyNet.connected&&performance.now()-(__eggyNet.remotes.get(id)?.claudeMotionAt??-Infinity)<500,friend.id,{timeout:30000});
@@ -58,7 +62,9 @@ async function main(){
   friend.send({t:'room.join',code});await page.waitForFunction(()=>__candyOnline.data.room?.members.length===2);
   await page.route('**/online-match-3GT2AEG7.js*',route=>route.fulfill({status:503,body:'Isolated minigame download failure'}));
   await page.evaluate(()=>__candyOnline.send({t:'room.start'}));
-  await page.waitForURL('**/balloon/**',{timeout:20000});
+  // Navigation is distinct from loading: this scenario deliberately breaks
+  // the entry download, so do not wait for the page-wide load event first.
+  await page.waitForURL('**/balloon/**',{waitUntil:'commit',timeout:20000});
   await page.locator('#park-connection-recovery[data-state=loading-error]').waitFor({timeout:60000});
   assert(friend.sockets.every(ws=>ws.readyState===1));
   await page.screenshot({path:'.qa-results/minigame-download-retry-mobile.png'});
@@ -91,7 +97,7 @@ async function main(){
   await page.waitForFunction(()=>__candyOnline.data.room?.code);const again=await page.evaluate(()=>__candyOnline.data.room.code);
   friend.send({t:'room.join',code:again});await page.waitForFunction(()=>__candyOnline.data.room?.members.length===2);
   await page.evaluate(()=>__candyOnline.send({t:'room.start'}));
-  await page.waitForURL('**/balloon/**',{timeout:20000});
+  await page.waitForURL('**/balloon/**',{waitUntil:'commit',timeout:20000});
   await page.locator('#park-connection-recovery[data-state=loading-error]').waitFor({timeout:60000});
   await page.getByRole('link',{name:/Return to/}).click();
   await ready();await page.waitForFunction(()=>__candyOnline.data.room===null,null,{timeout:15000});

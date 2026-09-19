@@ -41,6 +41,11 @@
 #settings-reset-confirm button{margin:3px}
 html[data-park-show-chat=false] :is(.park-chat-history,#local-speech-bubble,.remote-speech-bubble){display:none!important}
 html[data-park-show-names=false] :is([data-remote-name],.park-player-name){display:none!important}
+/* Moving labels cross the whole 3D canvas. Re-rasterizing their blurred
+   backgrounds/shadows cost more than the avatars on the physical Android.
+   Keep every name, color and badge; composite the bounded label layers instead. */
+.park-nameplate-layer{will-change:transform;pointer-events:none}
+[data-remote-name]{will-change:transform;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:0 1px 0 #00000014!important}
 /* Scale the whole action layout so both visible targets and hit boxes match. */
 .park-actions,.park-desktop-actions{transform:scale(var(--park-button-scale,1));transform-origin:right bottom}
 .party-eggy{scale:var(--park-button-scale,1);transform-origin:right bottom;bottom:calc(280px * var(--park-button-scale,1) + env(safe-area-inset-bottom,0px))!important}
