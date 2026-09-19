@@ -130,3 +130,21 @@ protocol metadata. `/health` reports this release's build and protocol. Keep the
 same allowed origins, data directory and tunnel; do not reset guest/safety data.
 GitHub Pages remains downstream of the full regression job. A push is not proof
 that Pages is live, and a green CI run is not proof of Android/iPhone acceptance.
+
+Continuation note: run `35466637662` passed unit tests and dependency audit but
+failed the new graphics screenshot's 30-second compositor timeout on Linux.
+That image-capture deadline is now 90 seconds, matching the existing geometry
+screenshots; framebuffer, shadow and rendered-frame checks are unchanged.
+The full recovery browser suite then passed locally with SwiftShader, including
+actual High/Low/Medium framebuffers, motion reconnect, failed download retry,
+continued peer simulation and both return-to-park controls.
+The interrupted local CPU foundation run reached and passed the previously
+failing coastal-divider check, but did not produce a complete-run verdict.
+
+After the turn interruption both local test processes and the old quick tunnel
+were absent, and its public URL returned HTTP 530. The existing Mac mini backend
+was restarted on the same port/data directory. Its replacement free test tunnel
+is `https://things-silk-insured-athletics.trycloudflare.com`; `/health` returned
+this build, protocol 1 and zero faults. The new client configuration uses that
+address. No paid server or subscription was created. This temporary service
+still depends on the Mac and its tunnel process remaining available.

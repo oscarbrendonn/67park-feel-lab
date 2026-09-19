@@ -8,7 +8,10 @@ module.exports=async function graphicsAndCamera(page,{mobile,check}){
  assert(low.width<high.width&&low.height<high.height,'Low must reduce the actual framebuffer');assert.equal(low.shadows,false);
  await select.selectOption('medium');await page.waitForTimeout(400);const medium=await read();
  assert(medium.width>=low.width&&medium.width<=high.width);assert.equal(medium.shadows,true);assert(medium.frame>high.frame);
- await page.screenshot({path:'.qa-results/graphics-'+(mobile?'mobile':'desktop')+'.png'});
+ console.log('GRAPHICS_FRAMEBUFFERS',JSON.stringify({mobile,high,low,medium}));
+ // Compositing a screenshot on the CPU-only runner is separate from the
+ // render-progress checks. Keep the measured framebuffers/shadows unchanged.
+ await page.screenshot({path:'.qa-results/graphics-'+(mobile?'mobile':'desktop')+'.png',timeout:90000});
  await select.selectOption('auto');await page.getByRole('button',{name:'Close settings',exact:true}).click();
  await check('quality changes retain rendering, controls and connections',async()=>{});
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('67park.feel-lab.player-settings.v1')).graphics),'auto');

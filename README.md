@@ -40,5 +40,6 @@ Lobby capacity remains 16. Low/Medium/High graphics change actual resolution and
 shadow rendering; Automatic retains the existing adaptive profile.
 
 The dedicated test backend must be upgraded before publishing a client that
-requires protocol negotiation. Its data directory and tunnel stay unchanged.
+requires protocol negotiation. Keep its data directory and allowed origins;
+the temporary tunnel address must be refreshed if that tunnel process stops.
 It remains a test service, not a permanent production hosting arrangement.

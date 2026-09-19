@@ -1,4 +1,4 @@
-import {PREVIEW_BACKEND,PREVIEW_VARIANT} from './preview-network-config.js?v=foundation-safety-1';
+import {PREVIEW_BACKEND,PREVIEW_VARIANT} from './preview-network-config.js?v=recovery-graphics-1';
 import {protectParkSocket} from './social-safety.js';
 import {CLIENT_PROTOCOL,CLIENT_BUILD,compatibleProtocol} from './protocol-version.js';
 import {assertConnectionAllowed,connectionProblem,watchParkSocket,currentParkSocket} from './connection-recovery.js';
