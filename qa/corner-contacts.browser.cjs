@@ -22,15 +22,15 @@ module.exports=async function checkCornerContacts(page,{mobile=false,check}){
    const original={...body.translation()},boardBefore=module.i.on,rows=[];
    const pause=ms=>new Promise(r=>setTimeout(r,ms));
    const frames=async count=>{for(let i=0;i<count;i++)await new Promise(requestAnimationFrame);};
-   // RAF count alone is not elapsed simulation time (high-refresh screens can
-   // deliver 16 frames before the body has even accelerated). Observe real
-   // movement for a bounded interval and inspect every rendered sample.
-   const observe=async(ms,sample)=>{
-    const start=performance.now();let count=0;
+   // Observe the required physical outcome, not an arbitrary RAF count: high
+   // refresh screens accelerate over many frames; CPU-only CI renders far fewer.
+   // Both must move the same distance without entering the wall.
+   const observe=async(ms,sample,reached)=>{
+    const start=performance.now();
     do{
-     await frames(1);count++;sample?.();
+     await frames(1);sample?.();
      if(performance.now()-start>60000)throw Error('Corner movement did not complete within its deadline');
-    }while(performance.now()-start<ms||count<32);
+    }while(performance.now()-start<ms||!reached());
    };
    const stop=()=>{input.x=input.z=0;input.run=false;body.setLinvel({x:0,y:0,z:0},true);};
    function direction(x,z){const yaw=w.camera.userData.feelLab.yaw;input.x=Math.cos(yaw)*x-Math.sin(yaw)*z;input.z=-Math.sin(yaw)*x-Math.cos(yaw)*z;}
@@ -51,20 +51,22 @@ module.exports=async function checkCornerContacts(page,{mobile=false,check}){
      await place(x,z);
      const before={...body.translation()};let intrusion=false;
      direction(-.7,.7);
-     await observe(800,()=>{const q=body.translation();if(w.ground(q.x,q.z)>q.y+1)intrusion=true;});
+     await observe(800,()=>{const q=body.translation();if(w.ground(q.x,q.z)>q.y+1)intrusion=true;},()=>body.translation().z-before.z>1);
      const slide={...body.translation()};stop();
      // Push directly into the visibly closed facade: stopped, with a clear cue.
      await place(x,z);direction(-1,0);
-     await observe(700);const wallStop={...body.translation()},cue=!!document.querySelector('#park-contact-cue:not([hidden])');
-     direction(1,0);await observe(600);const retreat={...body.translation()};stop();await frames(3);
+     await observe(700,null,()=>!!document.querySelector('#park-contact-cue:not([hidden])'));
+     const wallStop={...body.translation()},cue=!!document.querySelector('#park-contact-cue:not([hidden])');
+     direction(1,0);await observe(600,null,()=>body.translation().x-wallStop.x>1);
+     const retreat={...body.translation()};stop();await frames(3);
      rows.push({riding,before,slide,wall,wallStop,retreat,cue,intrusion,cueHidden:!document.querySelector('#park-contact-cue:not([hidden])')});
     }
    }finally{stop();await board(boardBefore);__tp([original.x,original.y,original.z]);await frames(3);}
    return rows;
   });
   for(const r of result){
-   assert(r.slide.z-r.before.z>.3,JSON.stringify(r));assert(!r.intrusion,JSON.stringify(r));
-   assert(r.wallStop.x>=r.wall+.35,JSON.stringify(r));assert(r.retreat.x-r.wallStop.x>.4,JSON.stringify(r));
+   assert(r.slide.z-r.before.z>1,JSON.stringify(r));assert(!r.intrusion,JSON.stringify(r));
+   assert(r.wallStop.x>=r.wall+.35,JSON.stringify(r));assert(r.retreat.x-r.wallStop.x>1,JSON.stringify(r));
    assert(r.cue,JSON.stringify(r));assert(r.cueHidden,JSON.stringify(r));
   }
   console.log('PASS model contact survey',JSON.stringify({mobile,...report,movement:result.map(r=>({board:r.riding,slide:r.slide.z-r.before.z,retreat:r.retreat.x-r.wallStop.x}))}));

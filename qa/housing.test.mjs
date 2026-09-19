@@ -5,7 +5,7 @@ import {HOUSES,roomSpawn,roomObstacle} from '../app/housing-layout.js';
 import {keepChatSendFocused} from '../app/chat-send-focus.js';
 import {HOME_SPOTS,spotPosition} from '../app/housing-actions.js';
 function fixture(){
- let at=10000;const sent=[];
+ let at=10000,request=0;const sent=[];
  const hub={now:()=>at,players:new Map(),lobbies:new Map([['A',{members:new Set()}],['B',{members:new Set()}]]),
   send(ws,m){if(ws)sent.push({id:ws.id,...m});},lobbyBroadcast(){},state(){},update(){},
   message(p,m){if(m.t==='room.create')p.roomId='test';},
@@ -14,7 +14,7 @@ function fixture(){
  installHousing({hubs:new Map([['kimi',hub]])});
  function player(id,lobbyId='A'){const p={id,name:id,lobbyId,online:{id},roomId:'',lastPosition:{p:[...HOUSES[0].door]}};hub.players.set(id,p);hub.lobbies.get(lobbyId).members.add(id);return p;}
  const a=player('alice'),b=player('bob'),c=player('cara','B');
- function act(p,t,extra={}){at+=401;hub.message(p,{t:'house.'+t,house:'H01',request:'test',...extra});return sent.findLast(m=>m.id===p.id&&m.t==='house.result');}
+ function act(p,t,extra={}){at+=401;hub.message(p,{t:'house.'+t,house:'H01',request:'test-'+ ++request,...extra});return sent.findLast(m=>m.id===p.id&&m.t==='house.result');}
  const state=p=>{act(p,'sync');return sent.findLast(m=>m.id===p.id&&m.t==='house.state');};
  return {hub,a,b,c,act,state,sent,advance:ms=>at+=ms};
 }
@@ -54,6 +54,16 @@ test('mini-game transition exits the interior; unknown commands and malformed lo
 test('1000 repeated home actions remain bounded',()=>{
  const f=fixture();for(let i=0;i<1000;i++)f.hub.message(f.a,{t:'house.claim',house:'H01'});
  assert(f.sent.length<50);assert.equal(f.state(f.a).houses.filter(h=>h.owner==='alice').length,1);
+});
+test('leaving a home is still immediate after spam; repeated exits do not flood replies',()=>{
+ const f=fixture();f.act(f.a,'claim');f.act(f.a,'enter');
+ for(let i=0;i<1000;i++)f.hub.message(f.a,{t:'house.sync',request:'spam-'+i});
+ f.sent.length=0;f.hub.message(f.a,{t:'house.exit',request:'escape'});
+ assert.deepEqual(f.a.lastPosition.p,HOUSES[0].door);
+ assert(f.sent.some(m=>m.t==='house.result'&&m.request==='escape'&&m.ok));
+ for(let i=0;i<1000;i++)f.hub.message(f.a,{t:'house.exit',request:'after-'+i});
+ assert(f.sent.length<50,'No-op escape commands must not amplify traffic');
+ f.advance(800);assert.equal(f.state(f.a).visiting,null);
 });
 test('stale pre-travel motion cannot undo arriving at the door',()=>{
  const f=fixture();f.act(f.a,'claim');f.act(f.a,'door');

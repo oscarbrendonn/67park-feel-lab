@@ -21,6 +21,9 @@ not overwrite identities used by the protected Kimi previews.
   dismounts; it is not silently declared recovered.
 - Independent client feature boundaries; bounded diagnostics and hit deduplication;
   removed stale socket listeners; bounded home request receipts and rate limits.
+- Rejected/replayed chat and home commands also have a small response budget.
+  Rejecting a spam burst cannot create an equally large reply queue. Ordinary
+  accepted actions and the immediate stand/exit escape route remain available.
 - Home failure offers Retry homes after restoring the exterior and releasing
   controls. Render health attempts bounded resume and offers an explicit reload;
   WebGL loss permits browser restoration. No automatic reload loop.

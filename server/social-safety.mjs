@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {chatVerdict,SAFETY_LIMIT,validSafetyId} from '../app/chat-policy.js';
+import {createReplyBudget} from './reply-budget.mjs';
 
 // No raw chat is written to disk. Stores only authenticated guest IDs and the
 // recipient's safety preferences. Identity storage is owned by CommunityHub.
@@ -19,6 +20,7 @@ export function installSocialSafety(app,{file=null}={}){
  for(const hub of app.hubs.values()){
   const original={send:hub.send,attach:hub.attach,lobbyMessage:hub.lobbyMessage,message:hub.message,profile:hub.profile,close:hub.close};
   const sockets=new WeakMap(),rates=new Map(),nonces=new Map(),commands=new Map();
+  const reply=createReplyBudget({now:()=>hub.now()});
   const streaming=new Set(['input','sports.input','race.input','rocket.input','island.drive','ping','house.exit','house.stand','room.leave']);
   const row=id=>{let r=saved.get(id);if(!r){r={blocked:[],muted:[]};saved.set(id,r);}return r;};
   const blocked=(a,b)=>!!(a&&b&&(saved.get(a)?.blocked.includes(b)||saved.get(b)?.blocked.includes(a)));
@@ -44,13 +46,13 @@ export function installSocialSafety(app,{file=null}={}){
    const nonce=typeof m.nonce==='string'?m.nonce.slice(0,24):'',now=hub.now();
    let seen=nonces.get(p.id);if(!seen){seen=new Map();nonces.set(p.id,seen);}
    for(const [key,v]of seen)if(now-v.at>60000)seen.delete(key);
-   if(nonce&&seen.has(nonce)){metrics.duplicates++;hub.send(p.lobbySocket,seen.get(nonce).result);return;}
+   if(nonce&&seen.has(nonce)){metrics.duplicates++;reply(p,()=>hub.send(p.lobbySocket,seen.get(nonce).result));return;}
    let result=chatVerdict(m.text),rate=rates.get(p.id)||{at:-Infinity,text:''};
    if(result.ok&&now-rate.at<800)result={ok:false,code:'rate',message:'One message at a time. Please wait a moment.'};
    if(result.ok&&result.text===rate.text&&now-rate.at<5000)result={ok:false,code:'duplicate',message:'You already sent that message.'};
    const ack={t:'chat.result',nonce,ok:result.ok,code:result.code,message:result.message};
    if(nonce){if(seen.size>=64)seen.delete(seen.keys().next().value);seen.set(nonce,{at:now,result:ack});}
-   if(!result.ok){metrics.rejected++;hub.send(p.lobbySocket,ack);return;}
+   if(!result.ok){metrics.rejected++;reply(p,()=>hub.send(p.lobbySocket,ack));return;}
    rates.set(p.id,{at:now,text:result.text});p.chatAt=now;metrics.accepted++;
    const l=hub.lobbies.get(p.lobbyId);if(!l)return;
    const entry={id:p.id,name:p.name,color:p.color,text:result.text,at:now,nonce};

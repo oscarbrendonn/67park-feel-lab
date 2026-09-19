@@ -1,5 +1,6 @@
 import {HOUSES,houseById,roomSpawn,inRoom,isHousingZone,nearDoor} from '../app/housing-layout.js';
 import {homeSpot,spotPosition,nearHomeSpot} from '../app/housing-actions.js';
+import {createReplyBudget} from './reply-budget.mjs';
 
 // Additive protocol: the existing avatar, vehicle and match simulations stay
 // untouched. Ownership is scoped to the authenticated session AND island.
@@ -8,6 +9,7 @@ export function installHousing(app){
  for(const hub of app.hubs.values()){
   const homes=new Map(),visits=new Map(),rates=new Map(),corrections=new Map(),travelUntil=new Map(),receipts=new Map();
   const rests=new Map(),invites=new Map(),bells=new Map(),rosters=new Map();
+  const reply=createReplyBudget({now:()=>hub.now()});
   const original={message:hub.message,lobbyMessage:hub.lobbyMessage,update:hub.update,state:hub.state};
   const entries=id=>{if(!homes.has(id))homes.set(id,new Map());return homes.get(id);};
   const occupied=(p)=>visits.get(p.id);
@@ -61,13 +63,13 @@ export function installHousing(app){
    const req=typeof m.request==='string'?m.request.slice(0,32):'',now=hub.now();
    let previous=receipts.get(p.id);if(!previous){previous=new Map();receipts.set(p.id,previous);}
    for(const [key,r]of previous)if(now-r.at>30000)previous.delete(key);
-   if(req&&previous.has(req)){hub.send(p.online,previous.get(req).value);return;}
+   if(req&&previous.has(req)){reply(p,()=>hub.send(p.online,previous.get(req).value));return;}
    const result=value=>{if(req){if(previous.size>=32)previous.delete(previous.keys().next().value);previous.set(req,{at:now,value});}hub.send(p.online,value);};
    // House traffic has its own small budget; it never creates a broadcast storm.
    const rate=rates.get(p.id)||{tokens:8,at:now};
    rate.tokens=Math.min(8,rate.tokens+(now-rate.at)/400);rate.at=now;rates.set(p.id,rate);
-   const safety=(m.t==='house.stand'||m.t==='house.exit')&&rests.has(p.id);
-   if(rate.tokens<1&&!safety){hub.send(p.online,{t:'house.result',request:typeof m.request==='string'?m.request.slice(0,32):'',ok:false,message:'Please wait a moment before another home action.'});return;}if(!safety)rate.tokens--;
+   const safety=m.t==='house.stand'?rests.has(p.id):m.t==='house.exit'&&visits.has(p.id);
+   if(rate.tokens<1&&!safety){reply(p,()=>hub.send(p.online,{t:'house.result',request:req,ok:false,message:'Please wait a moment before another home action.'}));return;}if(!safety)rate.tokens--;
    try{
     if(m.t==='house.sync'){
      const v=occupied(p);if(v&&v.lobby===p.lobbyId&&!p.roomId){const h=houseById(v.house);teleport(p,inRoom(h,...[p.lastPosition?.p?.[0],p.lastPosition?.p?.[2]])?p.lastPosition.p:roomSpawn(h),h.id);}

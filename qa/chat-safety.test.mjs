@@ -8,8 +8,18 @@ import {CommunityHub} from '../server/runtime/server/community-hub.js';
 import {installSocialSafety} from '../server/social-safety.mjs';
 import {installHousing} from '../server/housing.mjs';
 import {chatVerdict} from '../app/chat-policy.js';
+import {createReplyBudget} from '../server/reply-budget.mjs';
 class Socket extends EventEmitter{readyState=1;bufferedAmount=0;messages=[];send(s){this.messages.push(JSON.parse(s));}close(){this.readyState=3;this.emit('close');}}
 function fixture(options={}){let now=10000;const hub=new CommunityHub({now:()=>now,...options});const app={hubs:new Map([['kimi',hub]])};installHousing(app);const safety=installSocialSafety(app,{file:options.safetyFile});const add=token=>{const s=hub.session(token);hub.attach(s.player,new Socket(),'lobby');hub.attach(s.player,new Socket(),'online');return s;};return {hub,safety,add,advance(n=1000){now+=n;},chat(p,text,nonce='n'+now){hub.lobbyMessage(p,{t:'chat',text,nonce});}};}
+test('reply budgets are per player, recover with time, and never queue rejected work',()=>{
+ let at=0,aReplies=0,bReplies=0;const a={},b={},reply=createReplyBudget({now:()=>at});
+ for(let i=0;i<1000;i++)reply(a,()=>aReplies++);
+ assert.equal(aReplies,8);assert(reply(b,()=>bReplies++));assert.equal(bReplies,1);
+ at+=400;assert(reply(a,()=>aReplies++));assert.equal(aReplies,9);
+ assert(!reply(a,()=>aReplies++));at+=10000;
+ assert.equal(aReplies,9,'No deferred backlog runs when time advances');
+ assert(reply(a,()=>aReplies++));assert.equal(aReplies,10);
+});
 test('plain game chat survives; sexual content, evasion, links and markup are denied',()=>{
  for(const text of ['Hi everyone!','Let’s race','Merhaba arkadaşlar','classroom','Scunthorpe','I finished first','basketball 3 2 1'])assert.equal(chatVerdict(text).ok,true,text);
  for(const text of ['porn','p0rn','p o r n','p\u200born','ＰＯＲＮ','porno','çıplak foto gönder','send nude pictures','sex','sexy','s e x','https://example.com','example dot com','example.ru','www.example.org','discord.gg/test','<img src=x>'])assert.equal(chatVerdict(text).ok,false,text);
@@ -18,6 +28,7 @@ test('plain game chat survives; sexual content, evasion, links and markup are de
 test('1000 repeated chat commands stay bounded; rejected content never reaches history or peer',()=>{
  const f=fixture(),a=f.add().player,b=f.add().player;
  try{for(let i=0;i<1000;i++)f.chat(a,'hello',String(i));assert.equal(f.hub.lobbies.get(a.lobbyId).chat.length,1);assert.equal(f.safety.metrics.accepted,1);
+ assert(a.lobbySocket.messages.filter(m=>m.t==='chat.result').length<=9,'Rejected spam must not create a reply flood');
  f.advance();f.chat(a,'porn','bad');assert(!b.lobbySocket.messages.some(m=>m.t==='chat'&&m.text==='porn'));assert(!f.hub.lobbies.get(a.lobbyId).chat.some(m=>m.text==='porn'));
  f.advance();f.chat(a,'Ready to play','once');f.chat(a,'Ready to play','once');assert.equal(f.safety.metrics.duplicates,1);
  for(let i=0;i<100;i++){f.advance();f.chat(a,'Round '+i,'round'+i);}assert.equal(f.hub.lobbies.get(a.lobbyId).chat.length,20);
@@ -41,5 +52,5 @@ test('guest identity and block list survive authority restart without saving cha
 });
 test('duplicate home request cannot teleport twice or accumulate work',()=>{
  const f=fixture(),p=f.add().player;
- try{f.hub.message(p,{t:'house.door',house:'H03',request:'same'});for(let i=0;i<1000;i++)f.hub.message(p,{t:'house.door',house:'H03',request:'same'});assert.equal(p.online.messages.filter(m=>m.t==='house.travel').length,1);assert.equal(f.hub.rooms.size,0);assert.equal(p.online.readyState,1);}finally{f.safety.dispose();f.hub.close();}
+ try{f.hub.message(p,{t:'house.door',house:'H03',request:'same'});for(let i=0;i<1000;i++)f.hub.message(p,{t:'house.door',house:'H03',request:'same'});assert.equal(p.online.messages.filter(m=>m.t==='house.travel').length,1);assert(p.online.messages.filter(m=>m.t==='house.result').length<=9);assert.equal(f.hub.rooms.size,0);assert.equal(p.online.readyState,1);}finally{f.safety.dispose();f.hub.close();}
 });
